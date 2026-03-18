@@ -247,7 +247,7 @@ export default function Landing() {
             </div>
             <span className="font-display text-lg font-bold text-foreground">Callio</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 <p className="text-sm text-muted-foreground">© 2026 Callio. All rights reserved.</p> rights reserved.</p>
+          <p className="text-sm text-muted-foreground"><p className="text-sm text-muted-foreground">© 2026 Callio. All rights reserved.</p> className="text-sm text-muted-foreground">© 2026 Callio. All rights reserved.</p> rights reserved.</p>
         </div>
       </footer>
     </div>
