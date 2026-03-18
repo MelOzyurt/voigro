@@ -415,6 +415,7 @@ export type Database = {
           id: string
           industry: string | null
           location: string | null
+          logo_url: string | null
           name: string
           onboarding_status: Json
           opening_hours: string | null
@@ -430,6 +431,7 @@ export type Database = {
           id?: string
           industry?: string | null
           location?: string | null
+          logo_url?: string | null
           name: string
           onboarding_status?: Json
           opening_hours?: string | null
@@ -445,6 +447,7 @@ export type Database = {
           id?: string
           industry?: string | null
           location?: string | null
+          logo_url?: string | null
           name?: string
           onboarding_status?: Json
           opening_hours?: string | null
