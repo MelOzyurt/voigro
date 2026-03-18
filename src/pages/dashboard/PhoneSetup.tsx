@@ -93,7 +93,7 @@ export default function PhoneSetup() {
                 {[
                   "Log in to your phone provider's dashboard (e.g., AT&T, Verizon, Google Voice)",
                   "Find the Call Forwarding or Routing settings",
-                  "Set the forwarding destination to your Voxia number: +1 (888) 555-0199",
+                  "Set the forwarding destination to your virtual number: +1 (888) 555-0199",
                   "Choose \"Forward all calls\" or \"Forward when busy/unanswered\"",
                   "Save changes and make a test call to verify",
                 ].map((step, i) => (
