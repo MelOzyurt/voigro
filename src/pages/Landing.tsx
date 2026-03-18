@@ -28,7 +28,7 @@ const useCases = [
 const steps = [
   { num: "01", title: "Sign Up & Configure", desc: "Create your account, add your business details, services, and FAQs." },
   { num: "02", title: "Customize Your Agent", desc: "Set your agent's tone, greeting, and the actions it can perform." },
-  { num: "03", title: "Go Live", desc: "Forward your business line to Voxia. Calls are answered instantly, 24/7." },
+  { num: "03", title: "Go Live", desc: "{ num: "03", title: "Go Live", desc: "Forward your business line to Callio. Calls are answered instantly, 24/7." },. Calls are answered instantly, 24/7." },
 ];
 
 const plans = [
