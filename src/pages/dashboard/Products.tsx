@@ -1,14 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-
-const products = [
-  { id: 1, name: "Premium Shampoo", description: "Sulfate-free hydrating shampoo", price: "$24", stock: "In Stock" },
-  { id: 2, name: "Hair Mask", description: "Deep repair keratin mask", price: "$32", stock: "In Stock" },
-  { id: 3, name: "Styling Gel", description: "Strong hold styling gel", price: "$18", stock: "Low Stock" },
-  { id: 4, name: "Leave-in Conditioner", description: "Lightweight daily conditioner", price: "$22", stock: "In Stock" },
-];
+import { useKnowledgeItems } from "@/hooks/use-knowledge-items";
 
 export default function Products() {
+  const { data: products, isLoading } = useKnowledgeItems("product");
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -20,20 +16,29 @@ export default function Products() {
       </div>
 
       <div className="space-y-2">
-        {products.map(p => (
-          <div key={p.id} className="flex items-center gap-4 rounded-xl border bg-card p-4">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">{p.name}</p>
-              <p className="text-xs text-muted-foreground">{p.description}</p>
+        {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+        {!isLoading && (!products || products.length === 0) && (
+          <p className="text-sm text-muted-foreground py-8 text-center">No products added yet. Add products so your AI agent can mention or sell them.</p>
+        )}
+        {products?.map(p => {
+          const meta = p.metadata as Record<string, any>;
+          return (
+            <div key={p.id} className="flex items-center gap-4 rounded-xl border bg-card p-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                <p className="text-xs text-muted-foreground">{p.description}</p>
+              </div>
+              {meta?.price && <span className="text-sm font-semibold text-foreground">{meta.price}</span>}
+              {meta?.stock && (
+                <span className={`text-xs ${meta.stock === "Low Stock" ? "text-destructive" : "text-muted-foreground"}`}>{meta.stock}</span>
+              )}
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>
             </div>
-            <span className="text-sm font-semibold text-foreground">{p.price}</span>
-            <span className={`text-xs ${p.stock === "Low Stock" ? "text-destructive" : "text-muted-foreground"}`}>{p.stock}</span>
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
