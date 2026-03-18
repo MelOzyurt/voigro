@@ -47,7 +47,7 @@ export default function Landing() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Phone className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-bold text-foreground">Voxia</span>
+            <span className="font-display text-xl font-bold text-foreground">Callio</span>
           </Link>
           <div className="hidden items-center gap-8 md:flex">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
