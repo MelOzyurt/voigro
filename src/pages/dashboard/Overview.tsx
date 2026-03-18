@@ -1,5 +1,5 @@
 import {
-  Phone, PhoneMissed, Bot, PhoneCallback, CalendarCheck,
+  Phone, PhoneMissed, Bot, PhoneForwarded, CalendarCheck,
   ArrowUpRight, ArrowDownRight, TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
