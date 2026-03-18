@@ -296,7 +296,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Webhook URL (optional)</Label>
-                <Input placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" /> placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" />" className="mt-1.5" />
+                <Input placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" />
                 <p className="mt-1 text-xs text-muted-foreground">Receive call outcome data via webhook for CRM or automation integration.</p>
               </div>
             </CardContent>

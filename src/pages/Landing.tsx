@@ -110,7 +110,7 @@ export default function Landing() {
             ].map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "Caller" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[75%] rounded-xl px-4 py-2.5 text-sm ${msg.role === "Caller" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                  <span className="mb-0.5 block text-[10px] font-semibold opacity-70">{msg.role === "AI" ? "Callio Agent" : "Caller"}</span> className="mb-0.5 block text-[10px] font-semibold opacity-70">{msg.role === "AI" ? "Callio Agent" : "Caller"}</span>" : "Caller"}</span>
+                  <span className="mb-0.5 block text-[10px] font-semibold opacity-70">{msg.role === "AI" ? "Callio Agent" : "Caller"}</span>
                   {msg.text}
                 </div>
               </div>
