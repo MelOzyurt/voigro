@@ -43,7 +43,7 @@ export default function PhoneSetup() {
                     <p className="text-sm font-semibold text-foreground">+1 (888) 555-0199</p>
                     <Button variant="ghost" size="icon" className="h-6 w-6"><Copy className="h-3 w-3" /></Button>
                   </div>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">Forward your business number to this number</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">Forward your business number to this virtual number</p>
                 </div>
               </div>
             </CardContent>
