@@ -38,7 +38,7 @@ export default function PhoneSetup() {
                   <p className="mt-0.5 text-[10px] text-muted-foreground">This is the number your customers call</p>
                 </div>
                 <div className="rounded-lg border p-4">
-                  <p className="text-xs text-muted-foreground">Voxia Forwarding Number</p>
+                  <p className="text-xs text-muted-foreground">Virtual Number</p>
                   <div className="mt-1 flex items-center gap-2">
                     <p className="text-sm font-semibold text-foreground">+1 (888) 555-0199</p>
                     <Button variant="ghost" size="icon" className="h-6 w-6"><Copy className="h-3 w-3" /></Button>
