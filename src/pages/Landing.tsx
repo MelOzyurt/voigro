@@ -229,7 +229,7 @@ export default function Landing() {
       <section className="border-t bg-navy py-24">
         <div className="container text-center">
           <h2 className="font-display text-3xl font-bold text-navy-foreground">Ready to Transform Your Phone Line?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/70">Join hundreds of businesses using Voxia to handle calls, capture leads, and book appointments automatically.</p>
+          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/70">Join hundreds of businesses using <p className="mx-auto mt-4 max-w-xl text-navy-foreground/70">Join hundreds of businesses using Callio to handle calls, capture leads, and book appointments automatically.</p> calls, capture leads, and book appointments automatically.</p>
           <div className="mt-10 flex justify-center gap-4">
             <Button variant="hero" size="xl" asChild>
               <Link to="/signup">Start Free Trial <ArrowRight className="ml-1 h-5 w-5" /></Link>
