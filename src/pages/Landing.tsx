@@ -171,7 +171,7 @@ export default function Landing() {
         <div className="container">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="font-display text-3xl font-bold text-foreground">Built for Every Business</h2>
-            <p className="mt-3 text-muted-foreground">From restaurants to clinics, Voxia adapts to your industry.</p>
+            <p className="mt-3 text-muted-foreground">From restaurants to clinics, <p className="mt-3 text-muted-foreground">From restaurants to clinics, Callio adapts to your industry.</p> to your industry.</p>
           </div>
           <div className="mx-auto mt-16 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {useCases.map((uc, i) => (
