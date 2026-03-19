@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
 
         // Get AI response
         const systemPrompt = buildSystemPrompt(agent, org);
-        const aiResponse = await getAIResponse(conv?.messages || [{ role: "user", content: transcript }], systemPrompt);
+        const aiResponse = await getAIResponse(conv?.messages || [{ role: "user", content: transcript }], systemPrompt, llmConfig);
 
         // Add assistant message to history
         if (conv) {
