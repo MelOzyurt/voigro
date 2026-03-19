@@ -24,6 +24,7 @@ export default function AdminSettings() {
   const [countryCode, setCountryCode] = useState("GB");
   const [showApiKey, setShowApiKey] = useState(false);
   const [showApiSecret, setShowApiSecret] = useState(false);
+  const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
@@ -49,6 +50,7 @@ export default function AdminSettings() {
       setConnectionId((s.provider_connection_id as string) ?? "");
       setNumberType((s.provider_number_type as string) ?? "national");
       setCountryCode((s.provider_country_code as string) ?? "GB");
+      setWebhookBaseUrl((s.webhook_base_url as string) ?? "");
     }
   }, [settings]);
 
@@ -62,6 +64,7 @@ export default function AdminSettings() {
         provider_connection_id: connectionId || null,
         provider_number_type: numberType,
         provider_country_code: countryCode,
+        webhook_base_url: webhookBaseUrl || null,
       } as Record<string, unknown>;
 
       if (settings?.id) {
@@ -270,6 +273,18 @@ export default function AdminSettings() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div>
+                <Label>Webhook Base URL</Label>
+                <Input
+                  placeholder="https://your-project.supabase.co/functions/v1"
+                  value={webhookBaseUrl}
+                  onChange={e => setWebhookBaseUrl(e.target.value)}
+                  className="mt-1.5"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Base URL for call webhooks. The handler path will be appended automatically.
+                </p>
               </div>
               <div className="mt-4">
                 <Button

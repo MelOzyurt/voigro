@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
     const numberType = (settings as Record<string, unknown>).provider_number_type as string || "national";
     const countryCode = (settings as Record<string, unknown>).provider_country_code as string || "GB";
     const apiSecret = (settings as Record<string, unknown>).provider_api_secret as string;
+    const webhookBaseUrl = (settings as Record<string, unknown>).webhook_base_url as string;
 
     if (!apiKey) {
       return new Response(
@@ -178,7 +179,8 @@ Deno.serve(async (req) => {
         "";
 
       // Assign webhook URL to the number (via connection or direct update)
-      const webhookUrl = `${supabaseUrl}/functions/v1/handle-call?org=${organization_id}`;
+      const base = webhookBaseUrl || `${supabaseUrl}/functions/v1`;
+      const webhookUrl = `${base}/handle-call?org=${organization_id}`;
       
       if (phoneNumberId) {
         await fetch(
@@ -242,7 +244,8 @@ Deno.serve(async (req) => {
         searchData.available_phone_numbers[0].phone_number;
 
       // Purchase
-      const webhookUrl = `${supabaseUrl}/functions/v1/handle-call?org=${organization_id}`;
+      const base = webhookBaseUrl || `${supabaseUrl}/functions/v1`;
+      const webhookUrl = `${base}/handle-call?org=${organization_id}`;
       const purchaseRes = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/IncomingPhoneNumbers.json`,
         {
