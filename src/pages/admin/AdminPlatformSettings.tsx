@@ -110,7 +110,7 @@ export default function AdminSettings() {
     }
   };
 
-  const saveMutation = useMutation({
+  const saveVoiceMutation = useMutation({
     mutationFn: async () => {
       const payload = {
         default_voice_provider: provider,
@@ -121,6 +121,31 @@ export default function AdminSettings() {
         provider_number_type: numberType,
         provider_country_code: countryCode,
         webhook_base_url: webhookBaseUrl || null,
+      } as Record<string, unknown>;
+
+      if (settings?.id) {
+        const { error } = await supabase
+          .from("platform_settings")
+          .update(payload as never)
+          .eq("id", settings.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("platform_settings")
+          .insert(payload as never);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
+      toast.success("Voice provider settings saved.");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const saveLlmMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
         llm_provider: llmProvider,
         llm_api_key: llmApiKey || null,
         llm_model: llmModel,
@@ -142,7 +167,7 @@ export default function AdminSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
-      toast.success("Platform settings saved.");
+      toast.success("LLM settings saved.");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -228,9 +253,6 @@ export default function AdminSettings() {
           <h1 className="font-display text-2xl font-bold text-foreground">Platform Settings</h1>
           <p className="text-sm text-muted-foreground">Configure global platform behavior.</p>
         </div>
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-          <Save className="mr-2 h-4 w-4" /> Save Changes
-        </Button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -366,7 +388,7 @@ export default function AdminSettings() {
                   Base URL for call webhooks. The handler path will be appended automatically.
                 </p>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
@@ -377,6 +399,17 @@ export default function AdminSettings() {
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
                   ) : (
                     <><CheckCircle className="mr-2 h-4 w-4" /> Test Connection</>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => saveVoiceMutation.mutate()}
+                  disabled={saveVoiceMutation.isPending}
+                >
+                  {saveVoiceMutation.isPending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
+                  ) : (
+                    <><Save className="mr-2 h-4 w-4" /> Save Voice Settings</>
                   )}
                 </Button>
               </div>
@@ -474,7 +507,7 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            <div>
+            <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
@@ -485,6 +518,17 @@ export default function AdminSettings() {
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
                 ) : (
                   <><CheckCircle className="mr-2 h-4 w-4" /> Test LLM Connection</>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => saveLlmMutation.mutate()}
+                disabled={saveLlmMutation.isPending}
+              >
+                {saveLlmMutation.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
+                ) : (
+                  <><Save className="mr-2 h-4 w-4" /> Save LLM Settings</>
                 )}
               </Button>
             </div>
