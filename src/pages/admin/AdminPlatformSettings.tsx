@@ -288,10 +288,21 @@ export default function AdminSettings() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display text-base">Voice Provider</CardTitle>
-
+            <div className="flex items-center gap-2">
+              {voiceEditing && (
+                <Button variant="ghost" size="sm" onClick={resetVoiceFields}>
+                  <X className="mr-2 h-3.5 w-3.5" /> Cancel
+                </Button>
+              )}
+              {!voiceEditing && settings && (
+                <Button variant="outline" size="sm" onClick={() => setVoiceEditing(true)}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-          <fieldset className="space-y-6">
+          <fieldset disabled={!voiceEditing && !!settings} className="space-y-6">
             <div>
               <p className="text-sm text-muted-foreground">
                 Select the default telephony provider for new organizations.
