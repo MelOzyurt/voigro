@@ -399,33 +399,35 @@ export default function AdminSettings() {
                   Base URL for call webhooks. The handler path will be appended automatically.
                 </p>
               </div>
-              <div className="mt-4 flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestConnection}
-                  disabled={testingConnection || !apiKey}
-                >
-                  {testingConnection ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
-                  ) : (
-                    <><CheckCircle className="mr-2 h-4 w-4" /> Test Connection</>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => saveVoiceMutation.mutate()}
-                  disabled={saveVoiceMutation.isPending}
-                >
-                  {saveVoiceMutation.isPending ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
-                  ) : (
-                    <><Save className="mr-2 h-4 w-4" /> Save Voice Settings</>
-                  )}
-                </Button>
-              </div>
             </div>
           </fieldset>
+          <div className="mt-4 flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestConnection}
+              disabled={testingConnection || !apiKey}
+            >
+              {testingConnection ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
+              ) : (
+                <><CheckCircle className="mr-2 h-4 w-4" /> Test Connection</>
+              )}
+            </Button>
+            {voiceEditing && (
+              <Button
+                size="sm"
+                onClick={() => saveVoiceMutation.mutate()}
+                disabled={saveVoiceMutation.isPending}
+              >
+                {saveVoiceMutation.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
+                ) : (
+                  <><Save className="mr-2 h-4 w-4" /> Save Voice Settings</>
+                )}
+              </Button>
+            )}
+          </div>
           </CardContent>
         </Card>
 
@@ -531,20 +533,21 @@ export default function AdminSettings() {
                 </Select>
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTestLlm}
-                disabled={testingLlm || (llmProvider !== "lovable" && !llmApiKey)}
-              >
-                {testingLlm ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
-                ) : (
-                  <><CheckCircle className="mr-2 h-4 w-4" /> Test LLM Connection</>
-                )}
-              </Button>
+          </fieldset>
+          <div className="mt-4 flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestLlm}
+              disabled={testingLlm || (llmProvider !== "lovable" && !llmApiKey)}
+            >
+              {testingLlm ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
+              ) : (
+                <><CheckCircle className="mr-2 h-4 w-4" /> Test LLM Connection</>
+              )}
+            </Button>
+            {llmEditing && (
               <Button
                 size="sm"
                 onClick={() => saveLlmMutation.mutate()}
@@ -556,8 +559,8 @@ export default function AdminSettings() {
                   <><Save className="mr-2 h-4 w-4" /> Save LLM Settings</>
                 )}
               </Button>
-            </div>
-          </fieldset>
+            )}
+          </div>
           </CardContent>
         </Card>
 
