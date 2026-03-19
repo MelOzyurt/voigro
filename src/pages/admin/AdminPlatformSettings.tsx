@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle, Brain } from "lucide-react";
+import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle, Brain, Pencil, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef, useEffect } from "react";
@@ -59,7 +59,7 @@ export default function AdminSettings() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
-  
+  const [voiceEditing, setVoiceEditing] = useState(false);
 
   // LLM state
   const [llmProvider, setLlmProvider] = useState("lovable");
@@ -68,7 +68,7 @@ export default function AdminSettings() {
   const [llmLanguage, setLlmLanguage] = useState("en");
   const [showLlmApiKey, setShowLlmApiKey] = useState(false);
   const [testingLlm, setTestingLlm] = useState(false);
-  
+  const [llmEditing, setLlmEditing] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["platform-settings"],
@@ -83,23 +83,50 @@ export default function AdminSettings() {
     },
   });
 
+  // Sync DB → local state only when NOT editing
   useEffect(() => {
-    if (settings) {
+    if (settings && !voiceEditing) {
       setProvider(settings.default_voice_provider);
       const s = settings as Record<string, unknown>;
       setApiKey((s.provider_api_key as string) ?? "");
-      
-      
       setConnectionId((s.provider_connection_id as string) ?? "");
       setNumberType((s.provider_number_type as string) ?? "national");
       setCountryCode((s.provider_country_code as string) ?? "GB");
       setWebhookBaseUrl((s.webhook_base_url as string) ?? "");
+    }
+  }, [settings, voiceEditing]);
+
+  useEffect(() => {
+    if (settings && !llmEditing) {
+      const s = settings as Record<string, unknown>;
       setLlmProvider((s.llm_provider as string) ?? "lovable");
       setLlmApiKey((s.llm_api_key as string) ?? "");
       setLlmModel((s.llm_model as string) ?? "google/gemini-2.5-flash");
       setLlmLanguage((s.llm_language as string) ?? "en");
     }
-  }, [settings]);
+  }, [settings, llmEditing]);
+
+  const resetVoiceFields = () => {
+    if (!settings) return;
+    const s = settings as Record<string, unknown>;
+    setProvider(settings.default_voice_provider);
+    setApiKey((s.provider_api_key as string) ?? "");
+    setConnectionId((s.provider_connection_id as string) ?? "");
+    setNumberType((s.provider_number_type as string) ?? "national");
+    setCountryCode((s.provider_country_code as string) ?? "GB");
+    setWebhookBaseUrl((s.webhook_base_url as string) ?? "");
+    setVoiceEditing(false);
+  };
+
+  const resetLlmFields = () => {
+    if (!settings) return;
+    const s = settings as Record<string, unknown>;
+    setLlmProvider((s.llm_provider as string) ?? "lovable");
+    setLlmApiKey((s.llm_api_key as string) ?? "");
+    setLlmModel((s.llm_model as string) ?? "google/gemini-2.5-flash");
+    setLlmLanguage((s.llm_language as string) ?? "en");
+    setLlmEditing(false);
+  };
 
   // When LLM provider changes, set a sensible default model
   const handleLlmProviderChange = (val: string) => {
@@ -138,7 +165,7 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
       toast.success("Voice provider settings saved.");
-      
+      setVoiceEditing(false);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -168,7 +195,7 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
       toast.success("LLM settings saved.");
-      
+      setLlmEditing(false);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -261,10 +288,21 @@ export default function AdminSettings() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display text-base">Voice Provider</CardTitle>
-
+            <div className="flex items-center gap-2">
+              {voiceEditing && (
+                <Button variant="ghost" size="sm" onClick={resetVoiceFields}>
+                  <X className="mr-2 h-3.5 w-3.5" /> Cancel
+                </Button>
+              )}
+              {!voiceEditing && settings && (
+                <Button variant="outline" size="sm" onClick={() => setVoiceEditing(true)}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-          <fieldset className="space-y-6">
+          <fieldset disabled={!voiceEditing && !!settings} className="space-y-6">
             <div>
               <p className="text-sm text-muted-foreground">
                 Select the default telephony provider for new organizations.
@@ -397,11 +435,21 @@ export default function AdminSettings() {
             <CardTitle className="font-display text-base flex items-center gap-2">
               <Brain className="h-4 w-4" /> AI / LLM Configuration
             </CardTitle>
-
-
+            <div className="flex items-center gap-2">
+              {llmEditing && (
+                <Button variant="ghost" size="sm" onClick={resetLlmFields}>
+                  <X className="mr-2 h-3.5 w-3.5" /> Cancel
+                </Button>
+              )}
+              {!llmEditing && settings && (
+                <Button variant="outline" size="sm" onClick={() => setLlmEditing(true)}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-          <fieldset className="space-y-6">
+          <fieldset disabled={!llmEditing && !!settings} className="space-y-6">
             <p className="text-sm text-muted-foreground">
               Configure the AI model used by the phone assistant to generate responses during calls.
             </p>
