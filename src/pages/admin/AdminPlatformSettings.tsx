@@ -50,6 +50,7 @@ export default function AdminSettings() {
       setConnectionId((s.provider_connection_id as string) ?? "");
       setNumberType((s.provider_number_type as string) ?? "national");
       setCountryCode((s.provider_country_code as string) ?? "GB");
+      setWebhookBaseUrl((s.webhook_base_url as string) ?? "");
     }
   }, [settings]);
 
