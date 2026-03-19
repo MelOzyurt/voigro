@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
