@@ -535,19 +535,22 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTestLlm}
-                disabled={testingLlm || (llmProvider !== "lovable" && !llmApiKey)}
-              >
-                {testingLlm ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
-                ) : (
-                  <><CheckCircle className="mr-2 h-4 w-4" /> Test LLM Connection</>
-                )}
-              </Button>
+            </div>
+          </fieldset>
+          <div className="mt-4 flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestLlm}
+              disabled={testingLlm || (llmProvider !== "lovable" && !llmApiKey)}
+            >
+              {testingLlm ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
+              ) : (
+                <><CheckCircle className="mr-2 h-4 w-4" /> Test LLM Connection</>
+              )}
+            </Button>
+            {llmEditing && (
               <Button
                 size="sm"
                 onClick={() => saveLlmMutation.mutate()}
@@ -559,8 +562,8 @@ export default function AdminSettings() {
                   <><Save className="mr-2 h-4 w-4" /> Save LLM Settings</>
                 )}
               </Button>
-            </div>
-          </fieldset>
+            )}
+          </div>
           </CardContent>
         </Card>
 
