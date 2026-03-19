@@ -118,6 +118,8 @@ export default function Onboarding() {
     if (step === 3) {
       const ok = await ensureOrganization();
       if (!ok) return;
+      // Wait for query invalidation to propagate before moving to step 4
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     step < stepTitles.length - 1 ? setStep(step + 1) : navigate("/dashboard");
   };
