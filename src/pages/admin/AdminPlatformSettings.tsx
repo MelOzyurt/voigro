@@ -24,6 +24,7 @@ export default function AdminSettings() {
   const [countryCode, setCountryCode] = useState("GB");
   const [showApiKey, setShowApiKey] = useState(false);
   const [showApiSecret, setShowApiSecret] = useState(false);
+  const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
