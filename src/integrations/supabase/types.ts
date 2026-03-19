@@ -540,6 +540,7 @@ export type Database = {
           provider_country_code: string
           provider_number_type: string
           updated_at: string
+          webhook_base_url: string | null
         }
         Insert: {
           created_at?: string
@@ -552,6 +553,7 @@ export type Database = {
           provider_country_code?: string
           provider_number_type?: string
           updated_at?: string
+          webhook_base_url?: string | null
         }
         Update: {
           created_at?: string
@@ -564,6 +566,7 @@ export type Database = {
           provider_country_code?: string
           provider_number_type?: string
           updated_at?: string
+          webhook_base_url?: string | null
         }
         Relationships: []
       }
