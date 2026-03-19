@@ -397,11 +397,8 @@ export default function AdminSettings() {
             <CardTitle className="font-display text-base flex items-center gap-2">
               <Brain className="h-4 w-4" /> AI / LLM Configuration
             </CardTitle>
-            {!llmEditing && settings && (
-              <Button variant="outline" size="sm" onClick={() => setLlmEditing(true)}>
-                <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
-              </Button>
-            )}
+
+
           </CardHeader>
           <CardContent>
           <fieldset disabled={!llmEditing && !!settings} className="space-y-6">
