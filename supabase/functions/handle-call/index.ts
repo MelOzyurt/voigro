@@ -29,13 +29,32 @@ interface WebhookEvent {
   };
 }
 
-async function getProviderApiKey(supabase: ReturnType<typeof createClient>): Promise<string> {
+interface LlmConfig {
+  provider: string;
+  apiKey: string;
+  model: string;
+  language: string;
+}
+
+async function getPlatformConfig(supabase: ReturnType<typeof createClient>): Promise<{
+  providerApiKey: string;
+  llm: LlmConfig;
+}> {
   const { data } = await supabase
     .from("platform_settings")
-    .select("provider_api_key")
+    .select("*")
     .limit(1)
     .single();
-  return (data as Record<string, unknown>)?.provider_api_key as string || "";
+  const s = (data || {}) as Record<string, unknown>;
+  return {
+    providerApiKey: (s.provider_api_key as string) || "",
+    llm: {
+      provider: (s.llm_provider as string) || "lovable",
+      apiKey: (s.llm_api_key as string) || "",
+      model: (s.llm_model as string) || "google/gemini-2.5-flash",
+      language: (s.llm_language as string) || "en",
+    },
+  };
 }
 
 async function providerAction(
@@ -63,37 +82,63 @@ async function providerAction(
 
 async function getAIResponse(
   messages: Array<{ role: string; content: string }>,
-  systemPrompt: string
+  systemPrompt: string,
+  llm: LlmConfig
 ): Promise<string> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) {
-    console.error("LOVABLE_API_KEY not configured");
-    return "I'm sorry, I'm having trouble right now. Please try again later.";
-  }
-
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-      }),
-    });
+    let url: string;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    let body: Record<string, unknown>;
+
+    if (llm.provider === "anthropic") {
+      url = "https://api.anthropic.com/v1/messages";
+      headers["x-api-key"] = llm.apiKey;
+      headers["anthropic-version"] = "2023-06-01";
+      body = {
+        model: llm.model || "claude-sonnet-4-20250514",
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: messages.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
+      };
+    } else if (llm.provider === "gemini") {
+      url = `https://generativelanguage.googleapis.com/v1beta/models/${llm.model || "gemini-2.5-flash"}:generateContent?key=${llm.apiKey}`;
+      body = {
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: messages.map((m) => ({
+          role: m.role === "user" ? "user" : "model",
+          parts: [{ text: m.content }],
+        })),
+      };
+    } else {
+      // OpenAI-compatible: covers "lovable" and "openai"
+      if (llm.provider === "lovable") {
+        url = "https://ai.gateway.lovable.dev/v1/chat/completions";
+        headers["Authorization"] = `Bearer ${Deno.env.get("LOVABLE_API_KEY") || ""}`;
+      } else {
+        url = "https://api.openai.com/v1/chat/completions";
+        headers["Authorization"] = `Bearer ${llm.apiKey}`;
+      }
+      body = {
+        model: llm.model,
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+      };
+    }
+
+    const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
 
     if (!res.ok) {
       const text = await res.text();
-      console.error("AI gateway error:", res.status, text);
+      console.error("AI error:", res.status, text);
       return "I'm sorry, I couldn't process that. Could you please repeat?";
     }
 
     const data = await res.json();
+    if (llm.provider === "anthropic") {
+      return data.content?.[0]?.text || "I didn't catch that. Could you repeat?";
+    }
+    if (llm.provider === "gemini") {
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "I didn't catch that. Could you repeat?";
+    }
     return data.choices?.[0]?.message?.content || "I didn't catch that. Could you repeat?";
   } catch (err) {
     console.error("AI call failed:", err);
@@ -192,7 +237,9 @@ Deno.serve(async (req) => {
     if (orgResult.data) org = orgResult.data as Record<string, unknown>;
     if (agentResult.data) agent = agentResult.data as Record<string, unknown>;
 
-    const apiKey = await getProviderApiKey(supabase);
+    const platformConfig = await getPlatformConfig(supabase);
+    const apiKey = platformConfig.providerApiKey;
+    const llmConfig = platformConfig.llm;
 
     // Handle events
     switch (eventType) {
@@ -271,7 +318,7 @@ Deno.serve(async (req) => {
 
         // Get AI response
         const systemPrompt = buildSystemPrompt(agent, org);
-        const aiResponse = await getAIResponse(conv?.messages || [{ role: "user", content: transcript }], systemPrompt);
+        const aiResponse = await getAIResponse(conv?.messages || [{ role: "user", content: transcript }], systemPrompt, llmConfig);
 
         // Add assistant message to history
         if (conv) {

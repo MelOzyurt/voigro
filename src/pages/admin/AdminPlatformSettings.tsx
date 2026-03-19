@@ -3,11 +3,45 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
+import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle, Brain } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+
+const LLM_MODELS: Record<string, Array<{ value: string; label: string }>> = {
+  lovable: [
+    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash" },
+    { value: "openai/gpt-5-mini", label: "GPT-5 Mini" },
+    { value: "openai/gpt-5", label: "GPT-5" },
+  ],
+  openai: [
+    { value: "gpt-4o", label: "GPT-4o" },
+    { value: "gpt-4o-mini", label: "GPT-4o Mini" },
+    { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
+  ],
+  anthropic: [
+    { value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
+    { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" },
+    { value: "claude-3-haiku-20240307", label: "Claude 3 Haiku" },
+  ],
+  gemini: [
+    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+  ],
+};
+
+const LLM_LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "tr", label: "Türkçe" },
+  { value: "de", label: "Deutsch" },
+  { value: "fr", label: "Français" },
+  { value: "es", label: "Español" },
+  { value: "ar", label: "العربية" },
+];
 
 export default function AdminSettings() {
   const queryClient = useQueryClient();
@@ -16,6 +50,7 @@ export default function AdminSettings() {
   const [provider, setProvider] = useState("telnyx");
   const [platformLogo, setPlatformLogo] = useState<string | null>(null);
 
+  // Voice provider state
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [bundleId, setBundleId] = useState("");
@@ -26,6 +61,14 @@ export default function AdminSettings() {
   const [showApiSecret, setShowApiSecret] = useState(false);
   const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
+
+  // LLM state
+  const [llmProvider, setLlmProvider] = useState("lovable");
+  const [llmApiKey, setLlmApiKey] = useState("");
+  const [llmModel, setLlmModel] = useState("google/gemini-2.5-flash");
+  const [llmLanguage, setLlmLanguage] = useState("en");
+  const [showLlmApiKey, setShowLlmApiKey] = useState(false);
+  const [testingLlm, setTestingLlm] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["platform-settings"],
@@ -51,8 +94,21 @@ export default function AdminSettings() {
       setNumberType((s.provider_number_type as string) ?? "national");
       setCountryCode((s.provider_country_code as string) ?? "GB");
       setWebhookBaseUrl((s.webhook_base_url as string) ?? "");
+      setLlmProvider((s.llm_provider as string) ?? "lovable");
+      setLlmApiKey((s.llm_api_key as string) ?? "");
+      setLlmModel((s.llm_model as string) ?? "google/gemini-2.5-flash");
+      setLlmLanguage((s.llm_language as string) ?? "en");
     }
   }, [settings]);
+
+  // When LLM provider changes, set a sensible default model
+  const handleLlmProviderChange = (val: string) => {
+    setLlmProvider(val);
+    const models = LLM_MODELS[val];
+    if (models?.length) {
+      setLlmModel(models[0].value);
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -65,6 +121,10 @@ export default function AdminSettings() {
         provider_number_type: numberType,
         provider_country_code: countryCode,
         webhook_base_url: webhookBaseUrl || null,
+        llm_provider: llmProvider,
+        llm_api_key: llmApiKey || null,
+        llm_model: llmModel,
+        llm_language: llmLanguage,
       } as Record<string, unknown>;
 
       if (settings?.id) {
@@ -105,6 +165,24 @@ export default function AdminSettings() {
     }
   };
 
+  const handleTestLlm = async () => {
+    setTestingLlm(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-llm-connection");
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`LLM connected: ${data.provider} — ${data.model}`);
+      } else {
+        toast.error(data?.error || "LLM connection test failed.");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "LLM test failed.";
+      toast.error(message);
+    } finally {
+      setTestingLlm(false);
+    }
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -140,6 +218,8 @@ export default function AdminSettings() {
       setUploading(false);
     }
   };
+
+  const currentLlmModels = LLM_MODELS[llmProvider] || [];
 
   return (
     <div className="space-y-6">
@@ -274,7 +354,7 @@ export default function AdminSettings() {
                   </Select>
                 </div>
               </div>
-              <div>
+              <div className="mt-4">
                 <Label>Webhook Base URL</Label>
                 <Input
                   placeholder="https://your-project.supabase.co/functions/v1"
@@ -300,6 +380,113 @@ export default function AdminSettings() {
                   )}
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* LLM Configuration */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <Brain className="h-4 w-4" /> AI / LLM Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Configure the AI model used by the phone assistant to generate responses during calls.
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>LLM Provider</Label>
+                <Select value={llmProvider} onValueChange={handleLlmProviderChange}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lovable">Lovable AI (Built-in)</SelectItem>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="anthropic">Anthropic</SelectItem>
+                    <SelectItem value="gemini">Google Gemini</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {llmProvider === "lovable"
+                    ? "Uses the built-in AI gateway — no API key needed."
+                    : "Requires a valid API key from the selected provider."}
+                </p>
+              </div>
+
+              <div>
+                <Label>Model</Label>
+                <Select value={llmModel} onValueChange={setLlmModel}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentLlmModels.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {llmProvider !== "lovable" && (
+                <div>
+                  <Label>API Key</Label>
+                  <div className="relative mt-1.5">
+                    <Input
+                      type={showLlmApiKey ? "text" : "password"}
+                      placeholder="Enter LLM API key"
+                      value={llmApiKey}
+                      onChange={e => setLlmApiKey(e.target.value)}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-10 w-10"
+                      onClick={() => setShowLlmApiKey(!showLlmApiKey)}
+                    >
+                      {showLlmApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label>Response Language</Label>
+                <Select value={llmLanguage} onValueChange={setLlmLanguage}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LLM_LANGUAGES.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestLlm}
+                disabled={testingLlm || (llmProvider !== "lovable" && !llmApiKey)}
+              >
+                {testingLlm ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
+                ) : (
+                  <><CheckCircle className="mr-2 h-4 w-4" /> Test LLM Connection</>
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
