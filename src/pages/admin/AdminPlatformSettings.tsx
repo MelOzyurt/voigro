@@ -253,9 +253,6 @@ export default function AdminSettings() {
           <h1 className="font-display text-2xl font-bold text-foreground">Platform Settings</h1>
           <p className="text-sm text-muted-foreground">Configure global platform behavior.</p>
         </div>
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-          <Save className="mr-2 h-4 w-4" /> Save Changes
-        </Button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
