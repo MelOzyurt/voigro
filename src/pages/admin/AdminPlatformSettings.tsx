@@ -52,13 +52,11 @@ export default function AdminSettings() {
 
   // Voice provider state
   const [apiKey, setApiKey] = useState("");
-  const [apiSecret, setApiSecret] = useState("");
   const [bundleId, setBundleId] = useState("");
   const [connectionId, setConnectionId] = useState("");
   const [numberType, setNumberType] = useState("national");
   const [countryCode, setCountryCode] = useState("GB");
   const [showApiKey, setShowApiKey] = useState(false);
-  const [showApiSecret, setShowApiSecret] = useState(false);
   const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
   const [voiceEditing, setVoiceEditing] = useState(false);
@@ -90,7 +88,7 @@ export default function AdminSettings() {
       setProvider(settings.default_voice_provider);
       const s = settings as Record<string, unknown>;
       setApiKey((s.provider_api_key as string) ?? "");
-      setApiSecret((s.provider_api_secret as string) ?? "");
+      
       setBundleId((s.provider_bundle_id as string) ?? "");
       setConnectionId((s.provider_connection_id as string) ?? "");
       setNumberType((s.provider_number_type as string) ?? "national");
@@ -117,7 +115,6 @@ export default function AdminSettings() {
       const payload = {
         default_voice_provider: provider,
         provider_api_key: apiKey || null,
-        provider_api_secret: apiSecret || null,
         provider_bundle_id: bundleId || null,
         provider_connection_id: connectionId || null,
         provider_number_type: numberType,
@@ -315,27 +312,6 @@ export default function AdminSettings() {
                       onClick={() => setShowApiKey(!showApiKey)}
                     >
                       {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <Label>API Secret</Label>
-                  <div className="relative mt-1.5">
-                    <Input
-                      type={showApiSecret ? "text" : "password"}
-                      placeholder="Enter API secret"
-                      value={apiSecret}
-                      onChange={e => setApiSecret(e.target.value)}
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-10 w-10"
-                      onClick={() => setShowApiSecret(!showApiSecret)}
-                    >
-                      {showApiSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>

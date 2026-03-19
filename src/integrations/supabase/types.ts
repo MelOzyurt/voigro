@@ -538,7 +538,6 @@ export type Database = {
           llm_model: string
           llm_provider: string
           provider_api_key: string | null
-          provider_api_secret: string | null
           provider_bundle_id: string | null
           provider_connection_id: string | null
           provider_country_code: string
@@ -555,7 +554,6 @@ export type Database = {
           llm_model?: string
           llm_provider?: string
           provider_api_key?: string | null
-          provider_api_secret?: string | null
           provider_bundle_id?: string | null
           provider_connection_id?: string | null
           provider_country_code?: string
@@ -572,7 +570,6 @@ export type Database = {
           llm_model?: string
           llm_provider?: string
           provider_api_key?: string | null
-          provider_api_secret?: string | null
           provider_bundle_id?: string | null
           provider_connection_id?: string | null
           provider_country_code?: string
