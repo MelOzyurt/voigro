@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
     const numberType = (settings as Record<string, unknown>).provider_number_type as string || "national";
     const countryCode = (settings as Record<string, unknown>).provider_country_code as string || "GB";
     const apiSecret = (settings as Record<string, unknown>).provider_api_secret as string;
+    const webhookBaseUrl = (settings as Record<string, unknown>).webhook_base_url as string;
 
     if (!apiKey) {
       return new Response(
