@@ -165,7 +165,7 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
       toast.success("Voice provider settings saved.");
-      
+      setVoiceEditing(false);
     },
     onError: (err: Error) => toast.error(err.message),
   });
