@@ -533,8 +533,6 @@ export default function AdminSettings() {
                 </Select>
               </div>
             </div>
-
-            </div>
           </fieldset>
           <div className="mt-4 flex items-center gap-3">
             <Button
