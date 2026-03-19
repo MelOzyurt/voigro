@@ -171,7 +171,6 @@ export default function AdminSettings() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
-  });
 
   const handleTestConnection = async () => {
     setTestingConnection(true);
