@@ -168,7 +168,7 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
       toast.success("LLM settings saved.");
-      setLlmEditing(false);
+      
     },
     onError: (err: Error) => toast.error(err.message),
   });
