@@ -316,27 +316,6 @@ export default function AdminSettings() {
                   </div>
                 </div>
                 <div>
-                  <Label>API Secret</Label>
-                  <div className="relative mt-1.5">
-                    <Input
-                      type={showApiSecret ? "text" : "password"}
-                      placeholder="Enter API secret"
-                      value={apiSecret}
-                      onChange={e => setApiSecret(e.target.value)}
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-10 w-10"
-                      onClick={() => setShowApiSecret(!showApiSecret)}
-                    >
-                      {showApiSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div>
                   <Label>Regulatory Bundle ID</Label>
                   <Input
                     placeholder="Enter bundle ID"
