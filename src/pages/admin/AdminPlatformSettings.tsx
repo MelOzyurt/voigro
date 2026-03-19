@@ -52,13 +52,11 @@ export default function AdminSettings() {
 
   // Voice provider state
   const [apiKey, setApiKey] = useState("");
-  const [apiSecret, setApiSecret] = useState("");
   const [bundleId, setBundleId] = useState("");
   const [connectionId, setConnectionId] = useState("");
   const [numberType, setNumberType] = useState("national");
   const [countryCode, setCountryCode] = useState("GB");
   const [showApiKey, setShowApiKey] = useState(false);
-  const [showApiSecret, setShowApiSecret] = useState(false);
   const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
   const [voiceEditing, setVoiceEditing] = useState(false);
