@@ -83,23 +83,50 @@ export default function AdminSettings() {
     },
   });
 
+  // Sync DB → local state only when NOT editing
   useEffect(() => {
-    if (settings) {
+    if (settings && !voiceEditing) {
       setProvider(settings.default_voice_provider);
       const s = settings as Record<string, unknown>;
       setApiKey((s.provider_api_key as string) ?? "");
-      
-      
       setConnectionId((s.provider_connection_id as string) ?? "");
       setNumberType((s.provider_number_type as string) ?? "national");
       setCountryCode((s.provider_country_code as string) ?? "GB");
       setWebhookBaseUrl((s.webhook_base_url as string) ?? "");
+    }
+  }, [settings, voiceEditing]);
+
+  useEffect(() => {
+    if (settings && !llmEditing) {
+      const s = settings as Record<string, unknown>;
       setLlmProvider((s.llm_provider as string) ?? "lovable");
       setLlmApiKey((s.llm_api_key as string) ?? "");
       setLlmModel((s.llm_model as string) ?? "google/gemini-2.5-flash");
       setLlmLanguage((s.llm_language as string) ?? "en");
     }
-  }, [settings]);
+  }, [settings, llmEditing]);
+
+  const resetVoiceFields = () => {
+    if (!settings) return;
+    const s = settings as Record<string, unknown>;
+    setProvider(settings.default_voice_provider);
+    setApiKey((s.provider_api_key as string) ?? "");
+    setConnectionId((s.provider_connection_id as string) ?? "");
+    setNumberType((s.provider_number_type as string) ?? "national");
+    setCountryCode((s.provider_country_code as string) ?? "GB");
+    setWebhookBaseUrl((s.webhook_base_url as string) ?? "");
+    setVoiceEditing(false);
+  };
+
+  const resetLlmFields = () => {
+    if (!settings) return;
+    const s = settings as Record<string, unknown>;
+    setLlmProvider((s.llm_provider as string) ?? "lovable");
+    setLlmApiKey((s.llm_api_key as string) ?? "");
+    setLlmModel((s.llm_model as string) ?? "google/gemini-2.5-flash");
+    setLlmLanguage((s.llm_language as string) ?? "en");
+    setLlmEditing(false);
+  };
 
   // When LLM provider changes, set a sensible default model
   const handleLlmProviderChange = (val: string) => {
