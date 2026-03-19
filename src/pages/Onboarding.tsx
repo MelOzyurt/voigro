@@ -5,8 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { Phone, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Phone, ArrowRight, ArrowLeft, CheckCircle, Copy, Loader2 } from "lucide-react";
+import { usePhoneSetup } from "@/hooks/use-phone-setup";
+import { toast } from "sonner";
 
 const industries = ["Restaurant", "Auto Shop / Garage", "Medical Clinic", "Salon / Spa", "Retail Store", "Professional Services", "Real Estate", "Other"];
 const agentActions = [
@@ -18,7 +20,7 @@ const agentActions = [
   { id: "message", label: "Message Taking", desc: "Take messages when you're unavailable" },
 ];
 
-const stepTitles = ["Business Profile", "Services & Hours", "Agent Setup", "Phone & Actions", "Choose Plan", "Review"];
+const stepTitles = ["Business Profile", "Services & Hours", "Agent Setup", "Phone & Actions", "Phone Line", "Choose Plan", "Review"];
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -31,7 +33,10 @@ export default function Onboarding() {
     plan: "professional",
   });
 
-  const update = (key: string, value: any) => setData(prev => ({ ...prev, [key]: value }));
+  const { phoneSetup, provisionNumber, isProvisioning, updateSetup } = usePhoneSetup();
+  const [provisionTriggered, setProvisionTriggered] = useState(false);
+
+  const update = (key: string, value: unknown) => setData(prev => ({ ...prev, [key]: value }));
   const toggleAction = (id: string) => {
     const actions = data.selectedActions.includes(id)
       ? data.selectedActions.filter(a => a !== id)
@@ -39,8 +44,31 @@ export default function Onboarding() {
     update("selectedActions", actions);
   };
 
+  // Auto-trigger provisioning when reaching the phone line step
+  useEffect(() => {
+    if (step === 4 && !phoneSetup?.virtual_number && !provisionTriggered && !isProvisioning) {
+      setProvisionTriggered(true);
+      provisionNumber();
+    }
+  }, [step, phoneSetup?.virtual_number, provisionTriggered, isProvisioning, provisionNumber]);
+
+  const handleCopyNumber = () => {
+    if (phoneSetup?.virtual_number) {
+      navigator.clipboard.writeText(phoneSetup.virtual_number);
+      toast.success("Number copied to clipboard");
+    }
+  };
+
+  const handleConfirmForwarding = () => {
+    updateSetup({ forwarding_confirmed: true });
+    toast.success("Forwarding confirmed!");
+    next();
+  };
+
   const next = () => step < stepTitles.length - 1 ? setStep(step + 1) : navigate("/dashboard");
   const back = () => step > 0 && setStep(step - 1);
+
+  const canProceedPhoneLine = phoneSetup?.virtual_number && phoneSetup?.forwarding_confirmed;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -50,11 +78,10 @@ export default function Onboarding() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Phone className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-bold text-foreground">Voxia</span>
+            <span className="font-display text-xl font-bold text-foreground">Callio</span>
           </div>
           <h1 className="mt-6 font-display text-2xl font-bold text-foreground">Set up your AI agent</h1>
           <p className="mt-1 text-sm text-muted-foreground">Step {step + 1} of {stepTitles.length} — {stepTitles[step]}</p>
-          {/* Progress */}
           <div className="mt-6 flex items-center justify-center gap-1">
             {stepTitles.map((_, i) => (
               <div key={i} className={`h-1.5 flex-1 max-w-8 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-border"}`} />
@@ -79,7 +106,7 @@ export default function Onboarding() {
               </div>
               <div>
                 <Label>Location</Label>
-                <Input placeholder="City, State" value={data.location} onChange={e => update("location", e.target.value)} className="mt-1.5" />
+                <Input placeholder="City, Country" value={data.location} onChange={e => update("location", e.target.value)} className="mt-1.5" />
               </div>
               <div>
                 <Label>Website (optional)</Label>
@@ -136,11 +163,11 @@ export default function Onboarding() {
 
           {step === 3 && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Choose what your AI agent can do and connect your phone number.</p>
+              <p className="text-sm text-muted-foreground">Choose what your AI agent can do and enter your business phone number.</p>
               <div>
                 <Label>Business Phone Number</Label>
-                <Input placeholder="+1 (555) 000-0000" value={data.phone} onChange={e => update("phone", e.target.value)} className="mt-1.5" />
-                <p className="mt-1 text-xs text-muted-foreground">You'll forward this number to Voxia after setup.</p>
+                <Input placeholder="+44 20 7946 0958" value={data.phone} onChange={e => update("phone", e.target.value)} className="mt-1.5" />
+                <p className="mt-1 text-xs text-muted-foreground">You'll forward this number to your AI phone line after setup.</p>
               </div>
               <div className="pt-2">
                 <Label>What should your agent handle?</Label>
@@ -160,11 +187,78 @@ export default function Onboarding() {
           )}
 
           {step === 4 && (
+            <div className="space-y-5">
+              <p className="text-sm text-muted-foreground">
+                We're assigning a virtual phone number for your AI agent. You'll forward your business number to it.
+              </p>
+
+              {isProvisioning && !phoneSetup?.virtual_number ? (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm font-medium text-foreground">Setting up your phone line…</p>
+                  <p className="text-xs text-muted-foreground">This usually takes a few seconds.</p>
+                </div>
+              ) : phoneSetup?.virtual_number ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border bg-success/5 border-success/20 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-5 w-5 text-success" />
+                      <span className="text-sm font-semibold text-foreground">Your AI phone line is ready!</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-lg font-bold text-foreground">{phoneSetup.virtual_number}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyNumber}>
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">Forward your business number to this virtual number:</p>
+                    {[
+                      "Log in to your phone provider's dashboard",
+                      "Find Call Forwarding settings",
+                      `Set forwarding destination to: ${phoneSetup.virtual_number}`,
+                      "Save and make a test call to verify",
+                    ].map((s, i) => (
+                      <div key={i} className="flex gap-3 rounded-lg bg-secondary/50 p-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                          {i + 1}
+                        </span>
+                        <span className="text-sm text-foreground">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    className="w-full"
+                    onClick={handleConfirmForwarding}
+                    disabled={phoneSetup.forwarding_confirmed}
+                  >
+                    {phoneSetup.forwarding_confirmed ? (
+                      <><CheckCircle className="mr-2 h-4 w-4" /> Forwarding Confirmed</>
+                    ) : (
+                      "I've set up forwarding"
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <p className="text-sm text-muted-foreground">Could not assign a number automatically.</p>
+                  <Button onClick={() => { setProvisionTriggered(false); provisionNumber(); }} disabled={isProvisioning}>
+                    Try Again
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 5 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Choose the plan that fits your business. You can change anytime.</p>
               {[
-                { id: "starter", name: "Starter", price: "$49/mo", desc: "100 calls/month • 1 number • Basic agent", overage: "$0.35/call overage" },
-                { id: "professional", name: "Professional", price: "$149/mo", desc: "500 calls/month • 3 numbers • Advanced agent", overage: "$0.25/call overage" },
+                { id: "starter", name: "Starter", price: "£39/mo", desc: "100 calls/month • 1 number • Basic agent", overage: "£0.30/call overage" },
+                { id: "professional", name: "Professional", price: "£119/mo", desc: "500 calls/month • 3 numbers • Advanced agent", overage: "£0.20/call overage" },
                 { id: "enterprise", name: "Enterprise", price: "Custom", desc: "Unlimited calls • Custom integrations • SLA", overage: "Contact sales" },
               ].map(plan => (
                 <label key={plan.id} className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors ${data.plan === plan.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:bg-secondary/50"}`}>
@@ -184,7 +278,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Review your setup before launching. You can adjust everything from the dashboard later.</p>
               <div className="space-y-2">
@@ -193,6 +287,7 @@ export default function Onboarding() {
                   { label: "Industry", value: data.industry || "Not set" },
                   { label: "Location", value: data.location || "Not set" },
                   { label: "Phone", value: data.phone || "Not set" },
+                  { label: "AI Phone Line", value: phoneSetup?.virtual_number || "Not assigned" },
                   { label: "Agent Name", value: data.agentName || "Not set" },
                   { label: "Tone", value: data.tone },
                   { label: "Actions", value: data.selectedActions.length > 0 ? `${data.selectedActions.length} enabled` : "None" },
@@ -207,7 +302,7 @@ export default function Onboarding() {
               <div className="rounded-lg border bg-primary/5 border-primary/20 p-3">
                 <p className="text-xs text-foreground font-medium">After launching, you'll need to:</p>
                 <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                  <li>• Forward your phone number to your Voxia number</li>
+                  <li>• Verify call forwarding is working correctly</li>
                   <li>• Add detailed services, products, and FAQs</li>
                   <li>• Make a test call to verify everything works</li>
                 </ul>
@@ -217,7 +312,10 @@ export default function Onboarding() {
 
           <div className="mt-6 flex justify-between">
             <Button variant="ghost" onClick={back} disabled={step === 0}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
-            <Button onClick={next}>
+            <Button
+              onClick={next}
+              disabled={step === 4 && !phoneSetup?.virtual_number}
+            >
               {step === stepTitles.length - 1 ? "Launch Dashboard" : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

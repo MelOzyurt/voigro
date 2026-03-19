@@ -533,18 +533,36 @@ export type Database = {
           created_at: string
           default_voice_provider: string
           id: string
+          provider_api_key: string | null
+          provider_api_secret: string | null
+          provider_bundle_id: string | null
+          provider_connection_id: string | null
+          provider_country_code: string
+          provider_number_type: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           default_voice_provider?: string
           id?: string
+          provider_api_key?: string | null
+          provider_api_secret?: string | null
+          provider_bundle_id?: string | null
+          provider_connection_id?: string | null
+          provider_country_code?: string
+          provider_number_type?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           default_voice_provider?: string
           id?: string
+          provider_api_key?: string | null
+          provider_api_secret?: string | null
+          provider_bundle_id?: string | null
+          provider_connection_id?: string | null
+          provider_country_code?: string
+          provider_number_type?: string
           updated_at?: string
         }
         Relationships: []
