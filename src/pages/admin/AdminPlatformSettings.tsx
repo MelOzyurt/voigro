@@ -59,7 +59,7 @@ export default function AdminSettings() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
-  
+  const [voiceEditing, setVoiceEditing] = useState(false);
 
   // LLM state
   const [llmProvider, setLlmProvider] = useState("lovable");
@@ -68,7 +68,7 @@ export default function AdminSettings() {
   const [llmLanguage, setLlmLanguage] = useState("en");
   const [showLlmApiKey, setShowLlmApiKey] = useState(false);
   const [testingLlm, setTestingLlm] = useState(false);
-  
+  const [llmEditing, setLlmEditing] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["platform-settings"],
