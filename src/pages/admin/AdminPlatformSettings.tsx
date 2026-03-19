@@ -262,8 +262,13 @@ export default function AdminSettings() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Voice Provider */}
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display text-base">Voice Provider</CardTitle>
+            {!voiceEditing && settings && (
+              <Button variant="outline" size="sm" onClick={() => setVoiceEditing(true)}>
+                <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
