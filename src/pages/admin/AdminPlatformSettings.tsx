@@ -440,7 +440,8 @@ export default function AdminSettings() {
               </Button>
             )}
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
+          <fieldset disabled={!llmEditing && !!settings} className="space-y-6">
             <p className="text-sm text-muted-foreground">
               Configure the AI model used by the phone assistant to generate responses during calls.
             </p>
