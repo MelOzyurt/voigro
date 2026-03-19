@@ -533,6 +533,10 @@ export type Database = {
           created_at: string
           default_voice_provider: string
           id: string
+          llm_api_key: string | null
+          llm_language: string
+          llm_model: string
+          llm_provider: string
           provider_api_key: string | null
           provider_api_secret: string | null
           provider_bundle_id: string | null
@@ -546,6 +550,10 @@ export type Database = {
           created_at?: string
           default_voice_provider?: string
           id?: string
+          llm_api_key?: string | null
+          llm_language?: string
+          llm_model?: string
+          llm_provider?: string
           provider_api_key?: string | null
           provider_api_secret?: string | null
           provider_bundle_id?: string | null
@@ -559,6 +567,10 @@ export type Database = {
           created_at?: string
           default_voice_provider?: string
           id?: string
+          llm_api_key?: string | null
+          llm_language?: string
+          llm_model?: string
+          llm_provider?: string
           provider_api_key?: string | null
           provider_api_secret?: string | null
           provider_bundle_id?: string | null
