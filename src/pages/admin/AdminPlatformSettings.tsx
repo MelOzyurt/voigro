@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle, Brain, Pencil } from "lucide-react";
+import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle, Brain } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef, useEffect } from "react";
@@ -59,7 +59,7 @@ export default function AdminSettings() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [testingConnection, setTestingConnection] = useState(false);
-  const [voiceEditing, setVoiceEditing] = useState(false);
+  
 
   // LLM state
   const [llmProvider, setLlmProvider] = useState("lovable");
@@ -68,7 +68,7 @@ export default function AdminSettings() {
   const [llmLanguage, setLlmLanguage] = useState("en");
   const [showLlmApiKey, setShowLlmApiKey] = useState(false);
   const [testingLlm, setTestingLlm] = useState(false);
-  const [llmEditing, setLlmEditing] = useState(false);
+  
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["platform-settings"],
@@ -138,7 +138,7 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
       toast.success("Voice provider settings saved.");
-      setVoiceEditing(false);
+      
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -168,7 +168,7 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
       toast.success("LLM settings saved.");
-      setLlmEditing(false);
+      
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -261,14 +261,10 @@ export default function AdminSettings() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display text-base">Voice Provider</CardTitle>
-            {!voiceEditing && settings && (
-              <Button variant="outline" size="sm" onClick={() => setVoiceEditing(true)}>
-                <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
-              </Button>
-            )}
+
           </CardHeader>
           <CardContent>
-          <fieldset disabled={!voiceEditing && !!settings} className="space-y-6">
+          <fieldset className="space-y-6">
             <div>
               <p className="text-sm text-muted-foreground">
                 Select the default telephony provider for new organizations.
@@ -401,14 +397,11 @@ export default function AdminSettings() {
             <CardTitle className="font-display text-base flex items-center gap-2">
               <Brain className="h-4 w-4" /> AI / LLM Configuration
             </CardTitle>
-            {!llmEditing && settings && (
-              <Button variant="outline" size="sm" onClick={() => setLlmEditing(true)}>
-                <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
-              </Button>
-            )}
+
+
           </CardHeader>
           <CardContent>
-          <fieldset disabled={!llmEditing && !!settings} className="space-y-6">
+          <fieldset className="space-y-6">
             <p className="text-sm text-muted-foreground">
               Configure the AI model used by the phone assistant to generate responses during calls.
             </p>
