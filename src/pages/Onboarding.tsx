@@ -8,6 +8,9 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Phone, ArrowRight, ArrowLeft, CheckCircle, Copy, Loader2 } from "lucide-react";
 import { usePhoneSetup } from "@/hooks/use-phone-setup";
+import { useOrgId } from "@/hooks/use-organization";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const industries = ["Restaurant", "Auto Shop / Garage", "Medical Clinic", "Salon / Spa", "Retail Store", "Professional Services", "Real Estate", "Other"];
