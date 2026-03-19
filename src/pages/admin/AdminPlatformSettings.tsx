@@ -110,7 +110,7 @@ export default function AdminSettings() {
     }
   };
 
-  const saveMutation = useMutation({
+  const saveVoiceMutation = useMutation({
     mutationFn: async () => {
       const payload = {
         default_voice_provider: provider,
@@ -121,6 +121,31 @@ export default function AdminSettings() {
         provider_number_type: numberType,
         provider_country_code: countryCode,
         webhook_base_url: webhookBaseUrl || null,
+      } as Record<string, unknown>;
+
+      if (settings?.id) {
+        const { error } = await supabase
+          .from("platform_settings")
+          .update(payload as never)
+          .eq("id", settings.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("platform_settings")
+          .insert(payload as never);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
+      toast.success("Voice provider settings saved.");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const saveLlmMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
         llm_provider: llmProvider,
         llm_api_key: llmApiKey || null,
         llm_model: llmModel,
@@ -142,9 +167,10 @@ export default function AdminSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
-      toast.success("Platform settings saved.");
+      toast.success("LLM settings saved.");
     },
     onError: (err: Error) => toast.error(err.message),
+  });
   });
 
   const handleTestConnection = async () => {
