@@ -96,7 +96,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Greeting Message</Label>
-                <Textarea value={greeting} onChange={e => setGreeting(e.target.value)} className="mt-1.5" rows={3} />
+                <Textarea value={greeting} onChange={e => setGreeting(e.target.value)} className="mt-1.5" rows={3} disabled={!editing} />
                 <p className="mt-1 text-xs text-muted-foreground">The first thing callers hear when the AI picks up.</p>
               </div>
               <div>
