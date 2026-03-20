@@ -167,8 +167,8 @@ export default function AgentConfig() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Tone of Voice</Label>
-                <Select value={tone} onValueChange={setTone}>
-                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <Select value={tone} onValueChange={setTone} disabled={!editing}>
+                  <SelectTrigger className="mt-1.5" disabled={!editing}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="friendly">Friendly & Warm</SelectItem>
                     <SelectItem value="professional">Professional & Formal</SelectItem>
