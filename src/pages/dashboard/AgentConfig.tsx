@@ -321,7 +321,7 @@ export default function AgentConfig() {
                     <p className="text-sm font-medium text-foreground">{outcome.label}</p>
                     <p className="text-xs text-muted-foreground">{outcome.desc}</p>
                   </div>
-                  <Switch defaultChecked={outcome.enabled} />
+                  <Switch defaultChecked={outcome.enabled} disabled={!editing} />
                 </div>
               ))}
             </CardContent>
