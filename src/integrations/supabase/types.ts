@@ -423,6 +423,7 @@ export type Database = {
           onboarding_status: Json
           opening_hours: string | null
           primary_business_number: string | null
+          requested_business_number: string | null
           status: string
           subscription_plan: string
           timezone: string
@@ -439,6 +440,7 @@ export type Database = {
           onboarding_status?: Json
           opening_hours?: string | null
           primary_business_number?: string | null
+          requested_business_number?: string | null
           status?: string
           subscription_plan?: string
           timezone?: string
@@ -455,6 +457,7 @@ export type Database = {
           onboarding_status?: Json
           opening_hours?: string | null
           primary_business_number?: string | null
+          requested_business_number?: string | null
           status?: string
           subscription_plan?: string
           timezone?: string
@@ -472,6 +475,9 @@ export type Database = {
           id: string
           last_test_call_at: string | null
           organization_id: string
+          paired_by_admin_at: string | null
+          paired_by_admin_id: string | null
+          pairing_status: string
           provider: string
           provider_config: Json
           provisioned_at: string | null
@@ -491,6 +497,9 @@ export type Database = {
           id?: string
           last_test_call_at?: string | null
           organization_id: string
+          paired_by_admin_at?: string | null
+          paired_by_admin_id?: string | null
+          pairing_status?: string
           provider?: string
           provider_config?: Json
           provisioned_at?: string | null
@@ -510,6 +519,9 @@ export type Database = {
           id?: string
           last_test_call_at?: string | null
           organization_id?: string
+          paired_by_admin_at?: string | null
+          paired_by_admin_id?: string | null
+          pairing_status?: string
           provider?: string
           provider_config?: Json
           provisioned_at?: string | null
