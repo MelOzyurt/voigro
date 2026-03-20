@@ -101,7 +101,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>After-Hours Greeting</Label>
-                <Textarea defaultValue="Thanks for calling Maria's Salon. We're currently closed, but I can still help you book an appointment or take a message. How can I help?" className="mt-1.5" rows={3} />
+                <Textarea defaultValue="Thanks for calling Maria's Salon. We're currently closed, but I can still help you book an appointment or take a message. How can I help?" className="mt-1.5" rows={3} disabled={!editing} />
                 <p className="mt-1 text-xs text-muted-foreground">Used outside your business hours.</p>
               </div>
             </CardContent>
