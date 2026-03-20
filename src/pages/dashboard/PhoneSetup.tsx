@@ -276,8 +276,16 @@ export default function PhoneSetup() {
                 <p className="text-sm text-muted-foreground">
                   Make a test call to hear how your AI agent handles a real conversation.
                 </p>
-                <Button className="w-full">
-                  <PhoneCall className="mr-2 h-4 w-4" /> Make Test Call
+                <Button className="w-full" onClick={handleTestCall} disabled={isTestingCall}>
+                  {isTestingCall ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calling…
+                    </>
+                  ) : (
+                    <>
+                      <PhoneCall className="mr-2 h-4 w-4" /> Make Test Call
+                    </>
+                  )}
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center">
                   We'll call your business number and simulate a customer conversation.
