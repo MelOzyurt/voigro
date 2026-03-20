@@ -136,7 +136,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Special Instructions</Label>
-                <Textarea defaultValue="Always mention that we offer a 10% first-time customer discount. If asked about parking, let them know there's free parking in the lot behind the building." className="mt-1.5" rows={3} />
+                <Textarea defaultValue="Always mention that we offer a 10% first-time customer discount. If asked about parking, let them know there's free parking in the lot behind the building." className="mt-1.5" rows={3} disabled={!editing} />
                 <p className="mt-1 text-xs text-muted-foreground">Custom instructions or policies the AI should always follow.</p>
               </div>
             </CardContent>
