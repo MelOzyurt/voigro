@@ -6,10 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const conversations = new Map<
-  string,
-  { messages: Array<{ role: string; content: string }>; callId: string; orgId: string; startedAt: string }
->();
+const VOICE = "Telnyx.Ultra.a7a59115-2425-4192-844c-1e98ec7d6877";
 
 interface CallPayload {
   call_control_id: string;
@@ -33,6 +30,28 @@ interface LlmConfig {
   apiKey: string;
   model: string;
   language: string;
+}
+
+interface CallState {
+  phase: string;
+  orgId?: string;
+  callId?: string;
+  [key: string]: unknown;
+}
+
+// --- Helpers ---
+
+function encodeState(phase: string, extra: Record<string, unknown> = {}): string {
+  return btoa(JSON.stringify({ phase, ...extra }));
+}
+
+function decodeState(clientState: string | undefined): CallState {
+  if (!clientState) return { phase: "" };
+  try {
+    return JSON.parse(atob(clientState)) as CallState;
+  } catch {
+    return { phase: "" };
+  }
 }
 
 async function getPlatformConfig(supabase: ReturnType<typeof createClient>): Promise<{
@@ -235,18 +254,35 @@ function buildSystemPrompt(agent: Record<string, unknown>, org: Record<string, u
   return parts.join("\n");
 }
 
-function encodeState(phase: string, extra: Record<string, unknown> = {}): string {
-  return btoa(JSON.stringify({ phase, ...extra }));
+// --- DB helpers for stateless conversation ---
+
+async function getConversationMessages(
+  supabase: ReturnType<typeof createClient>,
+  callId: string
+): Promise<Array<{ role: string; content: string }>> {
+  const { data } = await supabase
+    .from("calls")
+    .select("conversation_messages")
+    .eq("id", callId)
+    .single();
+  return (data?.conversation_messages as Array<{ role: string; content: string }>) || [];
 }
 
-function decodeState(clientState: string | undefined): Record<string, unknown> {
-  if (!clientState) return {};
-  try {
-    return JSON.parse(atob(clientState));
-  } catch {
-    return {};
-  }
+async function appendConversationMessage(
+  supabase: ReturnType<typeof createClient>,
+  callId: string,
+  message: { role: string; content: string }
+): Promise<Array<{ role: string; content: string }>> {
+  const messages = await getConversationMessages(supabase, callId);
+  messages.push(message);
+  await supabase
+    .from("calls")
+    .update({ conversation_messages: messages })
+    .eq("id", callId);
+  return messages;
 }
+
+// --- Main handler ---
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -284,11 +320,12 @@ Deno.serve(async (req) => {
     const { call_control_id, call_leg_id, to, from } = payload;
     console.log(`[Event] call_control_id=${call_control_id}, to=${to}, from=${from}`);
 
-    // Find organization
-    let organizationId = orgIdParam || "";
-    let agent: Record<string, unknown> = {};
-    let org: Record<string, unknown> = {};
+    // --- Resolve orgId: from client_state first, then URL param, then DB lookup ---
+    const state = decodeState(payload.client_state as string | undefined);
+    let organizationId = state.orgId || orgIdParam || "";
+    let callId = state.callId || "";
 
+    // If no orgId from state, look up by phone number
     if (!organizationId && to) {
       const { data: phoneSetup } = await supabase
         .from("phone_setups")
@@ -304,6 +341,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // For events without to/from and no state, try to find by provider_call_id
+    if (!organizationId) {
+      const lookupId = call_leg_id || call_control_id;
+      if (lookupId) {
+        const { data: callRecord } = await supabase
+          .from("calls")
+          .select("organization_id, id")
+          .eq("provider_call_id", lookupId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (callRecord) {
+          organizationId = callRecord.organization_id;
+          if (!callId) callId = callRecord.id;
+        }
+      }
+    }
+
     if (!organizationId) {
       console.error("No organization found for number:", to);
       return new Response(JSON.stringify({ ok: true }), {
@@ -311,7 +366,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`[Event] Organization found: ${organizationId}`);
+    console.log(`[Event] Organization: ${organizationId}, callId: ${callId}`);
 
     // Fetch org and agent data
     const [orgResult, agentResult] = await Promise.all([
@@ -319,16 +374,18 @@ Deno.serve(async (req) => {
       supabase.from("ai_agents").select("*").eq("organization_id", organizationId).eq("is_active", true).limit(1).maybeSingle(),
     ]);
 
-    if (orgResult.data) org = orgResult.data as Record<string, unknown>;
-    if (agentResult.data) agent = agentResult.data as Record<string, unknown>;
+    const org = (orgResult.data || {}) as Record<string, unknown>;
+    const agent = (agentResult.data || {}) as Record<string, unknown>;
 
-    console.log(`[Event] Agent loaded: name=${agent.name}, greeting=${agent.greeting}, org=${org.name}`);
+    console.log(`[Event] Agent: name=${agent.name}, greeting=${agent.greeting}, org=${org.name}`);
 
     const platformConfig = await getPlatformConfig(supabase);
     const apiKey = platformConfig.providerApiKey;
     const llmConfig = platformConfig.llm;
 
-    console.log(`[Event] Provider API key present: ${!!apiKey}, LLM: ${llmConfig.provider}/${llmConfig.model}`);
+    // Helper to create client_state with orgId & callId persisted
+    const makeState = (phase: string, extra: Record<string, unknown> = {}): string =>
+      encodeState(phase, { orgId: organizationId, callId, ...extra });
 
     switch (eventType) {
       case "call.initiated": {
@@ -343,19 +400,26 @@ Deno.serve(async (req) => {
           started_at: new Date().toISOString(),
         }).select("id").single();
 
-        conversations.set(call_leg_id || call_control_id, {
-          messages: [],
-          callId: callData?.id || "",
-          orgId: organizationId,
-          startedAt: new Date().toISOString(),
-        });
+        callId = callData?.id || "";
+        console.log(`[call.initiated] Created call record: ${callId}`);
 
         await providerAction(call_control_id, "answer", apiKey);
         break;
       }
 
       case "call.answered": {
-        // Determine greeting with fallback chain
+        // If we don't have callId yet, look it up
+        if (!callId) {
+          const { data: cr } = await supabase
+            .from("calls")
+            .select("id")
+            .eq("provider_call_id", call_leg_id || call_control_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (cr) callId = cr.id;
+        }
+
         const bh = agent.business_hours as Record<string, unknown> | undefined;
         const withinHours = bh ? isWithinBusinessHours(bh) : true;
 
@@ -370,22 +434,20 @@ Deno.serve(async (req) => {
           greeting = "Hello, thank you for calling. How can I help you today?";
         }
 
-        console.log(`[call.answered] Using greeting: "${greeting}"`);
-        console.log(`[call.answered] agent.greeting="${agent.greeting}", org.name="${org.name}", withinHours=${withinHours}`);
+        console.log(`[call.answered] Greeting: "${greeting}", callId: ${callId}`);
 
         await providerAction(call_control_id, "speak", apiKey, {
           payload: greeting,
-          voice: "Telnyx.Ultra.a7a59115-2425-4192-844c-1e98ec7d6877",
+          voice: VOICE,
           language: "en-US",
-          client_state: encodeState("greeting"),
+          client_state: makeState("greeting"),
         });
         break;
       }
 
       case "call.speak.ended": {
-        const state = decodeState(payload.client_state as string | undefined);
-        const phase = state.phase as string || "unknown";
-        console.log(`[call.speak.ended] Phase: ${phase}`);
+        const phase = state.phase || "unknown";
+        console.log(`[call.speak.ended] Phase: ${phase}, orgId: ${organizationId}, callId: ${callId}`);
 
         if (phase === "transferring" && agent.transfer_number) {
           console.log(`[call.speak.ended] Transferring to ${agent.transfer_number}`);
@@ -393,17 +455,17 @@ Deno.serve(async (req) => {
             to: agent.transfer_number,
           });
         } else {
-          // After greeting or AI response → gather speech
           console.log(`[call.speak.ended] Starting gather_using_speak`);
           await providerAction(call_control_id, "gather_using_speak", apiKey, {
             payload: ".",
-            voice: "Telnyx.Ultra.a7a59115-2425-4192-844c-1e98ec7d6877",
+            voice: VOICE,
             language: "en-US",
             gather_method: "speech",
             speech_model: "enhanced",
             speech_timeout: "auto",
             timeout: 25,
             minimum_silence_duration: 800,
+            client_state: makeState("gathering"),
           });
         }
         break;
@@ -412,71 +474,71 @@ Deno.serve(async (req) => {
       case "call.gather.ended":
       case "call.speak_and_gather.ended": {
         const transcript = payload.speech_transcript as string;
-        const convKey = call_leg_id || call_control_id;
-        const conv = conversations.get(convKey);
 
-        console.log(`[call.gather.ended] Transcript: "${transcript || "(empty)"}"`);
+        console.log(`[gather] Transcript: "${transcript || "(empty)"}"`);
 
         if (!transcript || transcript.trim() === "") {
-          console.log(`[call.gather.ended] No speech detected, asking to repeat`);
+          console.log(`[gather] No speech, asking to repeat`);
           await providerAction(call_control_id, "speak", apiKey, {
             payload:
               (agent.fallback_message as string) ||
               "I didn't catch that. Could you please repeat?",
-            voice: "Telnyx.Ultra.a7a59115-2425-4192-844c-1e98ec7d6877",
+            voice: VOICE,
             language: "en-US",
-            client_state: encodeState("responding"),
+            client_state: makeState("responding"),
           });
           break;
         }
 
-        if (conv) {
-          conv.messages.push({ role: "user", content: transcript });
-        }
+        // Persist user message and get full conversation
+        const messagesAfterUser = await appendConversationMessage(supabase, callId, {
+          role: "user",
+          content: transcript,
+        });
 
         const systemPrompt = buildSystemPrompt(agent, org);
-        const aiResponse = await getAIResponse(conv?.messages || [{ role: "user", content: transcript }], systemPrompt, llmConfig);
+        const aiResponse = await getAIResponse(messagesAfterUser, systemPrompt, llmConfig);
 
-        console.log(`[call.gather.ended] AI response: "${aiResponse}"`);
+        console.log(`[gather] AI response: "${aiResponse}"`);
 
-        if (conv) {
-          conv.messages.push({ role: "assistant", content: aiResponse });
-        }
+        // Persist AI response
+        await appendConversationMessage(supabase, callId, {
+          role: "assistant",
+          content: aiResponse,
+        });
 
         // Check if AI wants to transfer
-        const lowerResponse = aiResponse.toLowerCase();
+        const lower = aiResponse.toLowerCase();
         const shouldTransfer =
-          lowerResponse.includes("transfer") &&
-          (lowerResponse.includes("connecting you") ||
-            lowerResponse.includes("let me transfer") ||
-            lowerResponse.includes("i'll transfer"));
+          lower.includes("transfer") &&
+          (lower.includes("connecting you") ||
+            lower.includes("let me transfer") ||
+            lower.includes("i'll transfer"));
 
-        if (shouldTransfer && agent.transfer_number) {
-          console.log(`[call.gather.ended] Will transfer after speaking`);
-          await providerAction(call_control_id, "speak", apiKey, {
-            payload: aiResponse,
-            voice: "Telnyx.Ultra.a7a59115-2425-4192-844c-1e98ec7d6877",
-            language: "en-US",
-            client_state: encodeState("transferring"),
-          });
-        } else {
-          await providerAction(call_control_id, "speak", apiKey, {
-            payload: aiResponse,
-            voice: "Telnyx.Ultra.a7a59115-2425-4192-844c-1e98ec7d6877",
-            language: "en-US",
-            client_state: encodeState("responding"),
-          });
-        }
+        const nextPhase = shouldTransfer && agent.transfer_number ? "transferring" : "responding";
+
+        await providerAction(call_control_id, "speak", apiKey, {
+          payload: aiResponse,
+          voice: VOICE,
+          language: "en-US",
+          client_state: makeState(nextPhase),
+        });
         break;
       }
 
       case "call.hangup": {
-        const convKey = call_leg_id || call_control_id;
-        const conv = conversations.get(convKey);
-        console.log(`[call.hangup] Call ended, messages: ${conv?.messages?.length || 0}`);
+        console.log(`[call.hangup] Call ended, callId: ${callId}`);
 
-        if (conv?.callId) {
-          const startTime = new Date(conv.startedAt).getTime();
+        if (callId) {
+          const { data: callRecord } = await supabase
+            .from("calls")
+            .select("started_at, conversation_messages")
+            .eq("id", callId)
+            .single();
+
+          const startedAt = callRecord?.started_at || new Date().toISOString();
+          const messages = (callRecord?.conversation_messages as Array<{ role: string; content: string }>) || [];
+          const startTime = new Date(startedAt).getTime();
           const durationSeconds = Math.round((Date.now() - startTime) / 1000);
 
           await supabase
@@ -487,27 +549,25 @@ Deno.serve(async (req) => {
               duration_seconds: durationSeconds,
               handled_by: "ai",
             })
-            .eq("id", conv.callId);
+            .eq("id", callId);
 
-          if (conv.messages.length > 0) {
-            const lastUserMsg = [...conv.messages].reverse().find((m) => m.role === "user");
+          if (messages.length > 0) {
+            const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
             await supabase.from("transcripts").insert({
-              call_id: conv.callId,
-              organization_id: conv.orgId,
-              messages: conv.messages.map((m, i) => ({
+              call_id: callId,
+              organization_id: organizationId,
+              messages: messages.map((m, i) => ({
                 role: m.role === "user" ? "caller" : "assistant",
                 text: m.content,
                 timestamp: new Date(startTime + i * 5000).toISOString(),
                 channel: m.role === "user" ? "stt" : "tts",
                 confidence: m.role === "user" ? 0.9 : 1.0,
               })),
-              summary: `Call with ${conv.messages.filter((m) => m.role === "user").length} caller messages`,
+              summary: `Call with ${messages.filter((m) => m.role === "user").length} caller messages`,
               extracted_intent: lastUserMsg?.content?.slice(0, 200) || null,
             });
           }
         }
-
-        conversations.delete(convKey);
         break;
       }
 

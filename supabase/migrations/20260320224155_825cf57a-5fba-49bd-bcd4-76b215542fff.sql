@@ -1,0 +1,1 @@
+ALTER TABLE public.calls ADD COLUMN IF NOT EXISTS conversation_messages jsonb NOT NULL DEFAULT '[]'::jsonb;
