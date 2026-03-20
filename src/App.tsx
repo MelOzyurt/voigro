@@ -7,7 +7,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
-import Onboarding from "./pages/Onboarding";
+
 import DashboardLayout from "./components/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/Overview";
 import AgentConfig from "./pages/dashboard/AgentConfig";
@@ -46,7 +46,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/onboarding" element={<Onboarding />} />
+          
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardOverview />} />
             <Route path="agent" element={<AgentConfig />} />

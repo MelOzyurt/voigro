@@ -2,8 +2,15 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
+import { useCurrentUser } from "@/hooks/use-organization";
 
 export default function DashboardLayout() {
+  const { data: profile } = useCurrentUser();
+
+  const userInitials = profile?.full_name
+    ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : profile?.email?.[0]?.toUpperCase() ?? "?";
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -15,7 +22,7 @@ export default function DashboardLayout() {
             </SidebarTrigger>
             <div className="flex-1" />
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              JD
+              {userInitials}
             </div>
           </header>
           <main className="flex-1 p-6">
