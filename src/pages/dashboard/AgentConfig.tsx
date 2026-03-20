@@ -213,8 +213,8 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Max Clarification Attempts</Label>
-                <Select defaultValue="3">
-                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <Select defaultValue="3" disabled={!editing}>
+                  <SelectTrigger className="mt-1.5" disabled={!editing}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="2">2 attempts</SelectItem>
                     <SelectItem value="3">3 attempts</SelectItem>
