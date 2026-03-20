@@ -191,8 +191,8 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Language</Label>
-                <Select defaultValue="en">
-                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <Select defaultValue="en" disabled={!editing}>
+                  <SelectTrigger className="mt-1.5" disabled={!editing}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
                     <SelectItem value="es">Spanish</SelectItem>
