@@ -26,6 +26,29 @@ const DEFAULT_BUSINESS_HOURS: BusinessHoursData = {
   custom_openings: [],
 };
 
+type TabKey = "identity" | "context" | "behavior" | "actions" | "escalation" | "outcomes";
+
+function TabEditControls({ editing, onEdit, onSave }: { editing: boolean; onEdit: () => void; onSave: () => void }) {
+  return (
+    <div className="flex items-center gap-2 mb-4">
+      {!editing ? (
+        <>
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+          </Button>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Lock className="h-3 w-3" /> Locked
+          </span>
+        </>
+      ) : (
+        <Button size="sm" onClick={onSave}>
+          <Save className="mr-2 h-3.5 w-3.5" /> Save Changes
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default function AgentConfig() {
   const [agentName, setAgentName] = useState("Maria's Assistant");
   const [greeting, setGreeting] = useState("Hi! Thanks for calling Maria's Salon. How can I help you today?");
@@ -33,36 +56,26 @@ export default function AgentConfig() {
   const [tone, setTone] = useState("friendly");
   const [style, setStyle] = useState("concise");
   const [businessHours, setBusinessHours] = useState<BusinessHoursData>(DEFAULT_BUSINESS_HOURS);
-  const [editing, setEditing] = useState(false);
 
-  const handleSave = () => {
-    // TODO: persist to database
-    setEditing(false);
+  const [editingTabs, setEditingTabs] = useState<Record<TabKey, boolean>>({
+    identity: false, context: false, behavior: false,
+    actions: false, escalation: false, outcomes: false,
+  });
+
+  const isEditing = (tab: TabKey) => editingTabs[tab];
+  const setTabEditing = (tab: TabKey, value: boolean) =>
+    setEditingTabs(prev => ({ ...prev, [tab]: value }));
+
+  const handleSave = (tab: TabKey) => {
+    // TODO: persist to database per section
+    setTabEditing(tab, false);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">AI Agent</h1>
-          <p className="text-sm text-muted-foreground">Configure how your AI phone agent behaves on calls.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {!editing ? (
-            <Button variant="outline" onClick={() => setEditing(true)}>
-              <Pencil className="mr-2 h-4 w-4" /> Edit
-            </Button>
-          ) : (
-            <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" /> Save Changes
-            </Button>
-          )}
-          {!editing && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Lock className="h-3 w-3" /> Locked
-            </span>
-          )}
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">AI Agent</h1>
+        <p className="text-sm text-muted-foreground">Configure how your AI phone agent behaves on calls.</p>
       </div>
 
       <Tabs defaultValue="identity" className="space-y-6">
@@ -77,6 +90,7 @@ export default function AgentConfig() {
 
         {/* Identity */}
         <TabsContent value="identity" className="space-y-6">
+          <TabEditControls editing={isEditing("identity")} onEdit={() => setTabEditing("identity", true)} onSave={() => handleSave("identity")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Agent Identity</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -91,17 +105,17 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Agent Name</Label>
-                <Input value={agentName} onChange={e => setAgentName(e.target.value)} className="mt-1.5" disabled={!editing} />
+                <Input value={agentName} onChange={e => setAgentName(e.target.value)} className="mt-1.5" disabled={!isEditing("identity")} />
                 <p className="mt-1 text-xs text-muted-foreground">The name your agent uses to introduce itself.</p>
               </div>
               <div>
                 <Label>Greeting Message</Label>
-                <Textarea value={greeting} onChange={e => setGreeting(e.target.value)} className="mt-1.5" rows={3} disabled={!editing} />
+                <Textarea value={greeting} onChange={e => setGreeting(e.target.value)} className="mt-1.5" rows={3} disabled={!isEditing("identity")} />
                 <p className="mt-1 text-xs text-muted-foreground">The first thing callers hear when the AI picks up.</p>
               </div>
               <div>
                 <Label>After-Hours Greeting</Label>
-                <Textarea defaultValue="Thanks for calling Maria's Salon. We're currently closed, but I can still help you book an appointment or take a message. How can I help?" className="mt-1.5" rows={3} disabled={!editing} />
+                <Textarea defaultValue="Thanks for calling Maria's Salon. We're currently closed, but I can still help you book an appointment or take a message. How can I help?" className="mt-1.5" rows={3} disabled={!isEditing("identity")} />
                 <p className="mt-1 text-xs text-muted-foreground">Used outside your business hours.</p>
               </div>
             </CardContent>
@@ -110,12 +124,13 @@ export default function AgentConfig() {
 
         {/* Business Context */}
         <TabsContent value="context" className="space-y-6">
+          <TabEditControls editing={isEditing("context")} onEdit={() => setTabEditing("context", true)} onSave={() => handleSave("context")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Business Context</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label>Business Description</Label>
-                <Textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-1.5" rows={4} disabled={!editing} />
+                <Textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-1.5" rows={4} disabled={!isEditing("context")} />
                 <p className="mt-1 text-xs text-muted-foreground">Help the AI understand your business so it can answer questions accurately.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -136,7 +151,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Special Instructions</Label>
-                <Textarea defaultValue="Always mention that we offer a 10% first-time customer discount. If asked about parking, let them know there's free parking in the lot behind the building." className="mt-1.5" rows={3} disabled={!editing} />
+                <Textarea defaultValue="Always mention that we offer a 10% first-time customer discount. If asked about parking, let them know there's free parking in the lot behind the building." className="mt-1.5" rows={3} disabled={!isEditing("context")} />
                 <p className="mt-1 text-xs text-muted-foreground">Custom instructions or policies the AI should always follow.</p>
               </div>
             </CardContent>
@@ -147,9 +162,9 @@ export default function AgentConfig() {
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">Your agent uses these to answer caller questions. Manage them from their respective pages.</p>
               {[
-                { label: "Services", count: 5, link: "/dashboard/services" },
-                { label: "Products", count: 4, link: "/dashboard/products" },
-                { label: "FAQs", count: 5, link: "/dashboard/faqs" },
+                { label: "Services", count: 5 },
+                { label: "Products", count: 4 },
+                { label: "FAQs", count: 5 },
               ].map((source, i) => (
                 <div key={i} className="flex items-center justify-between rounded-lg border p-3">
                   <span className="text-sm text-foreground">{source.label}</span>
@@ -162,13 +177,14 @@ export default function AgentConfig() {
 
         {/* Tone & Style */}
         <TabsContent value="behavior" className="space-y-6">
+          <TabEditControls editing={isEditing("behavior")} onEdit={() => setTabEditing("behavior", true)} onSave={() => handleSave("behavior")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Tone & Response Style</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label>Tone of Voice</Label>
-                <Select value={tone} onValueChange={setTone} disabled={!editing}>
-                  <SelectTrigger className="mt-1.5" disabled={!editing}><SelectValue /></SelectTrigger>
+                <Select value={tone} onValueChange={setTone} disabled={!isEditing("behavior")}>
+                  <SelectTrigger className="mt-1.5" disabled={!isEditing("behavior")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="friendly">Friendly & Warm</SelectItem>
                     <SelectItem value="professional">Professional & Formal</SelectItem>
@@ -180,8 +196,8 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Response Style</Label>
-                <Select value={style} onValueChange={setStyle} disabled={!editing}>
-                  <SelectTrigger className="mt-1.5" disabled={!editing}><SelectValue /></SelectTrigger>
+                <Select value={style} onValueChange={setStyle} disabled={!isEditing("behavior")}>
+                  <SelectTrigger className="mt-1.5" disabled={!isEditing("behavior")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="concise">Concise — Short & direct answers</SelectItem>
                     <SelectItem value="detailed">Detailed — Thorough explanations</SelectItem>
@@ -191,8 +207,8 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Language</Label>
-                <Select defaultValue="en" disabled={!editing}>
-                  <SelectTrigger className="mt-1.5" disabled={!editing}><SelectValue /></SelectTrigger>
+                <Select defaultValue="en" disabled={!isEditing("behavior")}>
+                  <SelectTrigger className="mt-1.5" disabled={!isEditing("behavior")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
                     <SelectItem value="es">Spanish</SelectItem>
@@ -208,13 +224,13 @@ export default function AgentConfig() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Fallback Message</Label>
-                <Textarea defaultValue="I'm sorry, I don't have that information right now. Would you like me to have someone call you back?" className="mt-1.5" rows={2} disabled={!editing} />
+                <Textarea defaultValue="I'm sorry, I don't have that information right now. Would you like me to have someone call you back?" className="mt-1.5" rows={2} disabled={!isEditing("behavior")} />
                 <p className="mt-1 text-xs text-muted-foreground">Used when the AI doesn't know the answer.</p>
               </div>
               <div>
                 <Label>Max Clarification Attempts</Label>
-                <Select defaultValue="3" disabled={!editing}>
-                  <SelectTrigger className="mt-1.5" disabled={!editing}><SelectValue /></SelectTrigger>
+                <Select defaultValue="3" disabled={!isEditing("behavior")}>
+                  <SelectTrigger className="mt-1.5" disabled={!isEditing("behavior")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="2">2 attempts</SelectItem>
                     <SelectItem value="3">3 attempts</SelectItem>
@@ -228,7 +244,7 @@ export default function AgentConfig() {
                   <p className="text-sm font-medium text-foreground">Offer callback on fallback</p>
                   <p className="text-xs text-muted-foreground">When the AI can't help, offer to take a callback request</p>
                 </div>
-                <Switch defaultChecked disabled={!editing} />
+                <Switch defaultChecked disabled={!isEditing("behavior")} />
               </div>
             </CardContent>
           </Card>
@@ -236,6 +252,7 @@ export default function AgentConfig() {
 
         {/* Actions */}
         <TabsContent value="actions" className="space-y-6">
+          <TabEditControls editing={isEditing("actions")} onEdit={() => setTabEditing("actions", true)} onSave={() => handleSave("actions")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Supported Actions</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -253,7 +270,7 @@ export default function AgentConfig() {
                     <p className="text-sm font-medium text-foreground">{action.label}</p>
                     <p className="text-xs text-muted-foreground">{action.desc}</p>
                   </div>
-                  <Switch defaultChecked={action.enabled} disabled={!editing} />
+                  <Switch defaultChecked={action.enabled} disabled={!isEditing("actions")} />
                 </div>
               ))}
             </CardContent>
@@ -262,17 +279,18 @@ export default function AgentConfig() {
 
         {/* Escalation */}
         <TabsContent value="escalation" className="space-y-6">
+          <TabEditControls editing={isEditing("escalation")} onEdit={() => setTabEditing("escalation", true)} onSave={() => handleSave("escalation")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Human Handoff & Escalation</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label>Transfer Phone Number</Label>
-                <Input defaultValue="+1 (555) 000-0000" className="mt-1.5" disabled={!editing} />
+                <Input defaultValue="+1 (555) 000-0000" className="mt-1.5" disabled={!isEditing("escalation")} />
                 <p className="mt-1 text-xs text-muted-foreground">Calls are transferred here when the AI escalates.</p>
               </div>
               <div>
                 <Label>Transfer Announcement</Label>
-                <Textarea defaultValue="Let me connect you with a team member who can help. Please hold for a moment." className="mt-1.5" rows={2} disabled={!editing} />
+                <Textarea defaultValue="Let me connect you with a team member who can help. Please hold for a moment." className="mt-1.5" rows={2} disabled={!isEditing("escalation")} />
               </div>
               <div className="space-y-3 pt-2">
                 <p className="text-sm font-medium text-foreground">Escalation Triggers</p>
@@ -287,7 +305,7 @@ export default function AgentConfig() {
                       <p className="text-sm font-medium text-foreground">{rule.label}</p>
                       <p className="text-xs text-muted-foreground">{rule.desc}</p>
                     </div>
-                    <Switch defaultChecked={rule.enabled} disabled={!editing} />
+                    <Switch defaultChecked={rule.enabled} disabled={!isEditing("escalation")} />
                   </div>
                 ))}
               </div>
@@ -296,7 +314,7 @@ export default function AgentConfig() {
                   <p className="text-sm font-medium text-foreground">Allow transfer during business hours only</p>
                   <p className="text-xs text-muted-foreground">After hours, offer callback instead of transferring</p>
                 </div>
-                <Switch defaultChecked disabled={!editing} />
+                <Switch defaultChecked disabled={!isEditing("escalation")} />
               </div>
             </CardContent>
           </Card>
@@ -304,6 +322,7 @@ export default function AgentConfig() {
 
         {/* Call Outcomes */}
         <TabsContent value="outcomes" className="space-y-6">
+          <TabEditControls editing={isEditing("outcomes")} onEdit={() => setTabEditing("outcomes", true)} onSave={() => handleSave("outcomes")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Call Outcome Behavior</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -321,7 +340,7 @@ export default function AgentConfig() {
                     <p className="text-sm font-medium text-foreground">{outcome.label}</p>
                     <p className="text-xs text-muted-foreground">{outcome.desc}</p>
                   </div>
-                  <Switch defaultChecked={outcome.enabled} disabled={!editing} />
+                  <Switch defaultChecked={outcome.enabled} disabled={!isEditing("outcomes")} />
                 </div>
               ))}
             </CardContent>
@@ -332,12 +351,12 @@ export default function AgentConfig() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Notification Email</Label>
-                <Input defaultValue="john@mariassalon.com" className="mt-1.5" disabled={!editing} />
+                <Input defaultValue="john@mariassalon.com" className="mt-1.5" disabled={!isEditing("outcomes")} />
                 <p className="mt-1 text-xs text-muted-foreground">Where to send call summaries and action notifications.</p>
               </div>
               <div>
                 <Label>Webhook URL (optional)</Label>
-                <Input placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" disabled={!editing} />
+                <Input placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" disabled={!isEditing("outcomes")} />
                 <p className="mt-1 text-xs text-muted-foreground">Receive call outcome data via webhook for CRM or automation integration.</p>
               </div>
             </CardContent>
