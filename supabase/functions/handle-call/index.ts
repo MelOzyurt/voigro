@@ -446,7 +446,7 @@ Deno.serve(async (req) => {
           speech_timeout: "auto",
           timeout: 30,
           minimum_silence_duration: 800,
-          client_state: makeState("greeting"),
+          client_state: makeState("greeting", { gatherActive: true }),
         });
         break;
       }
