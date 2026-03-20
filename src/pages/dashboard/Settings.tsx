@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization, useOrgId } from "@/hooks/use-organization";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAiAgent } from "@/hooks/use-ai-agent";
+import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
 
 export default function SettingsPage() {
   const { data: org, isLoading: orgLoading } = useOrganization();
