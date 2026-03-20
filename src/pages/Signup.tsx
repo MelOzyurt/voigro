@@ -16,8 +16,16 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email || !password || !name) {
       toast.error("Please fill in all fields.");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      toast.error("Password must contain at least one uppercase letter and one number.");
       return;
     }
     setLoading(true);
