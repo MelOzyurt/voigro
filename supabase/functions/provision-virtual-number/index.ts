@@ -92,30 +92,46 @@ Deno.serve(async (req) => {
     let phoneNumberId: string;
 
     if (provider === "telnyx") {
-      // Search for available number
-      const searchParams = new URLSearchParams({
-        "filter[country_code]": countryCode,
-        "filter[number_type]": numberType,
-        "filter[features][]": "voice",
-        "filter[limit]": "1",
-      });
-
-      const searchRes = await fetch(
-        `https://api.telnyx.com/v2/available_phone_numbers?${searchParams}`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-        }
+      // Search for an available number with graceful fallbacks
+      const candidateNumberTypes = Array.from(
+        new Set([numberType, "local", "national", "toll_free"].filter(Boolean))
       );
 
-      const searchData = await searchRes.json();
-      if (!searchRes.ok || !searchData.data?.length) {
+      let availableNumber: string | null = null;
+      let lastSearchData: unknown = null;
+
+      for (const candidateType of candidateNumberTypes) {
+        const searchParams = new URLSearchParams({
+          "filter[country_code]": countryCode,
+          "filter[number_type]": candidateType,
+          "filter[features][]": "voice",
+          "filter[limit]": "1",
+        });
+
+        const searchRes = await fetch(
+          `https://api.telnyx.com/v2/available_phone_numbers?${searchParams}`,
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const searchData = await searchRes.json();
+        lastSearchData = searchData;
+
+        if (searchRes.ok && searchData.data?.length) {
+          availableNumber = searchData.data[0].phone_number;
+          break;
+        }
+      }
+
+      if (!availableNumber) {
         return new Response(
           JSON.stringify({
-            error: "No available numbers found",
-            details: searchData,
+            error: `No available ${countryCode} voice numbers found for the current provider configuration`,
+            details: lastSearchData,
           }),
           {
             status: 400,
@@ -123,8 +139,6 @@ Deno.serve(async (req) => {
           }
         );
       }
-
-      const availableNumber = searchData.data[0].phone_number;
 
       // Purchase number
       const orderBody: Record<string, unknown> = {
