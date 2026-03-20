@@ -6,9 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Bot, Save, Pencil, Lock } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAiAgent, useUpdateAiAgent, useCreateAiAgent } from "@/hooks/use-ai-agent";
+import { useOrgId } from "@/hooks/use-organization";
+import { toast } from "sonner";
 import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
+import type { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_BUSINESS_HOURS: BusinessHoursData = {
   timezone: "UTC+0",
@@ -26,9 +31,34 @@ const DEFAULT_BUSINESS_HOURS: BusinessHoursData = {
   custom_openings: [],
 };
 
+const DEFAULT_ENABLED_ACTIONS = {
+  appointment_booking: true,
+  callback_requests: true,
+  lead_capture: true,
+  order_intake: false,
+  faq_answering: true,
+  message_taking: true,
+};
+
+const DEFAULT_ESCALATION_RULES = {
+  negative_sentiment: true,
+  repeated_failure: true,
+  explicit_request: true,
+  high_value: false,
+};
+
+const DEFAULT_OUTCOME_BEHAVIORS = {
+  after_booking: true,
+  after_lead_capture: true,
+  after_callback: true,
+  after_order: false,
+  after_escalation: true,
+  after_missed_call: false,
+};
+
 type TabKey = "identity" | "context" | "behavior" | "actions" | "escalation" | "outcomes";
 
-function TabEditControls({ editing, onEdit, onSave }: { editing: boolean; onEdit: () => void; onSave: () => void }) {
+function TabEditControls({ editing, onEdit, onSave, saving }: { editing: boolean; onEdit: () => void; onSave: () => void; saving?: boolean }) {
   return (
     <div className="flex items-center gap-2 mb-4">
       {!editing ? (
@@ -41,35 +71,163 @@ function TabEditControls({ editing, onEdit, onSave }: { editing: boolean; onEdit
           </span>
         </>
       ) : (
-        <Button size="sm" onClick={onSave}>
-          <Save className="mr-2 h-3.5 w-3.5" /> Save Changes
+        <Button size="sm" onClick={onSave} disabled={saving}>
+          <Save className="mr-2 h-3.5 w-3.5" /> {saving ? "Saving…" : "Save Changes"}
         </Button>
       )}
     </div>
   );
 }
 
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div><Skeleton className="h-8 w-48" /><Skeleton className="h-4 w-64 mt-2" /></div>
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
+}
+
 export default function AgentConfig() {
-  const [agentName, setAgentName] = useState("Maria's Assistant");
-  const [greeting, setGreeting] = useState("Hi! Thanks for calling Maria's Salon. How can I help you today?");
-  const [description, setDescription] = useState("A premium hair salon offering cuts, coloring, styling, and treatments. Located in San Francisco, CA. Open Mon-Fri 9am-7pm, Sat 9am-5pm.");
-  const [tone, setTone] = useState("friendly");
-  const [style, setStyle] = useState("concise");
+  const { data: agent, isLoading } = useAiAgent();
+  const updateAgent = useUpdateAiAgent();
+  const createAgent = useCreateAiAgent();
+  const orgId = useOrgId();
+
+  // Form state
+  const [name, setName] = useState("");
+  const [greeting, setGreeting] = useState("");
+  const [afterHoursGreeting, setAfterHoursGreeting] = useState("");
+  const [businessDescription, setBusinessDescription] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [location, setLocation] = useState("");
+  const [specialInstructions, setSpecialInstructions] = useState("");
   const [businessHours, setBusinessHours] = useState<BusinessHoursData>(DEFAULT_BUSINESS_HOURS);
+  const [tone, setTone] = useState("friendly");
+  const [responseStyle, setResponseStyle] = useState("concise");
+  const [language, setLanguage] = useState("en");
+  const [fallbackMessage, setFallbackMessage] = useState("");
+  const [maxClarification, setMaxClarification] = useState("3");
+  const [offerCallback, setOfferCallback] = useState(true);
+  const [enabledActions, setEnabledActions] = useState(DEFAULT_ENABLED_ACTIONS);
+  const [escalationRules, setEscalationRules] = useState(DEFAULT_ESCALATION_RULES);
+  const [transferNumber, setTransferNumber] = useState("");
+  const [transferAnnouncement, setTransferAnnouncement] = useState("");
+  const [businessHoursOnlyTransfer, setBusinessHoursOnlyTransfer] = useState(false);
+  const [outcomeBehaviors, setOutcomeBehaviors] = useState(DEFAULT_OUTCOME_BEHAVIORS);
+  const [notificationEmail, setNotificationEmail] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
 
   const [editingTabs, setEditingTabs] = useState<Record<TabKey, boolean>>({
     identity: false, context: false, behavior: false,
     actions: false, escalation: false, outcomes: false,
   });
 
+  // Populate form from DB
+  useEffect(() => {
+    if (!agent) return;
+    setName(agent.name || "");
+    setGreeting(agent.greeting || "");
+    setAfterHoursGreeting(agent.after_hours_greeting || "");
+    setBusinessDescription(agent.business_description || "");
+    setSpecialInstructions(agent.special_instructions || "");
+    setTone(agent.tone || "friendly");
+    setResponseStyle(agent.response_style || "concise");
+    setLanguage(agent.language || "en");
+    setFallbackMessage(agent.fallback_message || "");
+    setMaxClarification(String(agent.max_clarification_attempts || 3));
+    setOfferCallback(agent.offer_callback_on_fallback ?? true);
+    setTransferNumber(agent.transfer_number || "");
+    setTransferAnnouncement(agent.transfer_announcement || "");
+    setBusinessHoursOnlyTransfer(agent.business_hours_only_transfer ?? false);
+    setNotificationEmail(agent.notification_email || "");
+    setWebhookUrl(agent.webhook_url || "");
+
+    if (agent.business_hours && typeof agent.business_hours === "object") {
+      setBusinessHours(agent.business_hours as unknown as BusinessHoursData);
+    }
+    if (agent.enabled_actions && typeof agent.enabled_actions === "object") {
+      setEnabledActions({ ...DEFAULT_ENABLED_ACTIONS, ...(agent.enabled_actions as any) });
+    }
+    if (agent.escalation_rules && typeof agent.escalation_rules === "object") {
+      setEscalationRules({ ...DEFAULT_ESCALATION_RULES, ...(agent.escalation_rules as any) });
+    }
+    if (agent.outcome_behaviors && typeof agent.outcome_behaviors === "object") {
+      setOutcomeBehaviors({ ...DEFAULT_OUTCOME_BEHAVIORS, ...(agent.outcome_behaviors as any) });
+    }
+  }, [agent]);
+
   const isEditing = (tab: TabKey) => editingTabs[tab];
   const setTabEditing = (tab: TabKey, value: boolean) =>
     setEditingTabs(prev => ({ ...prev, [tab]: value }));
 
-  const handleSave = (tab: TabKey) => {
-    // TODO: persist to database per section
-    setTabEditing(tab, false);
+  const getUpdates = () => ({
+    name,
+    greeting,
+    after_hours_greeting: afterHoursGreeting,
+    business_description: businessDescription,
+    special_instructions: specialInstructions,
+    business_hours: businessHours as unknown as Json,
+    tone,
+    response_style: responseStyle,
+    language,
+    fallback_message: fallbackMessage,
+    max_clarification_attempts: parseInt(maxClarification),
+    offer_callback_on_fallback: offerCallback,
+    enabled_actions: enabledActions as unknown as Json,
+    escalation_rules: escalationRules as unknown as Json,
+    outcome_behaviors: outcomeBehaviors as unknown as Json,
+    transfer_number: transferNumber,
+    transfer_announcement: transferAnnouncement,
+    business_hours_only_transfer: businessHoursOnlyTransfer,
+    notification_email: notificationEmail,
+    webhook_url: webhookUrl,
+  });
+
+  const saving = updateAgent.isPending || createAgent.isPending;
+
+  const handleSave = async (tab: TabKey) => {
+    const updates = getUpdates();
+    try {
+      if (agent?.id) {
+        await updateAgent.mutateAsync({ id: agent.id, updates });
+      } else {
+        await createAgent.mutateAsync(updates);
+      }
+      setTabEditing(tab, false);
+      toast.success("Agent settings saved");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    }
   };
+
+  if (isLoading) return <LoadingSkeleton />;
+
+  const actionsList = [
+    { key: "appointment_booking", label: "Appointment Booking", desc: "Let callers book appointments with available time slots" },
+    { key: "callback_requests", label: "Callback Requests", desc: "Collect caller details and schedule a callback from your team" },
+    { key: "lead_capture", label: "Lead Capture", desc: "Gather contact information and interest details from potential customers" },
+    { key: "order_intake", label: "Order Intake", desc: "Accept simple product or service orders over the phone" },
+    { key: "faq_answering", label: "FAQ Answering", desc: "Answer common questions using your configured FAQs and business info" },
+    { key: "message_taking", label: "Message Taking", desc: "Take messages when the business is closed or staff is unavailable" },
+  ];
+
+  const escalationList = [
+    { key: "negative_sentiment", label: "Escalate when negative sentiment is detected", desc: "Transfer angry or frustrated callers to a human" },
+    { key: "repeated_failure", label: "Escalate after repeated failed understanding", desc: "Transfer if the AI cannot understand after max attempts" },
+    { key: "explicit_request", label: "Escalate on explicit request", desc: "Transfer immediately when caller asks for a human" },
+    { key: "high_value", label: "Escalate for high-value inquiries", desc: "Transfer calls about large orders or custom requests" },
+  ];
+
+  const outcomeList = [
+    { key: "after_booking", label: "After Booking", desc: "Send a confirmation SMS to the caller" },
+    { key: "after_lead_capture", label: "After Lead Capture", desc: "Send lead details to email or webhook" },
+    { key: "after_callback", label: "After Callback Request", desc: "Create a callback task and notify staff" },
+    { key: "after_order", label: "After Order", desc: "Send order confirmation to caller and business" },
+    { key: "after_escalation", label: "After Escalation", desc: "Log escalation reason and send summary to staff" },
+    { key: "after_missed_call", label: "After Missed Call", desc: "Send a follow-up SMS to the missed caller" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -90,7 +248,7 @@ export default function AgentConfig() {
 
         {/* Identity */}
         <TabsContent value="identity" className="space-y-6">
-          <TabEditControls editing={isEditing("identity")} onEdit={() => setTabEditing("identity", true)} onSave={() => handleSave("identity")} />
+          <TabEditControls editing={isEditing("identity")} onEdit={() => setTabEditing("identity", true)} onSave={() => handleSave("identity")} saving={saving} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Agent Identity</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -99,13 +257,13 @@ export default function AgentConfig() {
                   <Bot className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{agentName}</p>
+                  <p className="text-sm font-semibold text-foreground">{name || "AI Assistant"}</p>
                   <p className="text-xs text-muted-foreground">Your AI phone agent</p>
                 </div>
               </div>
               <div>
                 <Label>Agent Name</Label>
-                <Input value={agentName} onChange={e => setAgentName(e.target.value)} className="mt-1.5" disabled={!isEditing("identity")} />
+                <Input value={name} onChange={e => setName(e.target.value)} className="mt-1.5" disabled={!isEditing("identity")} />
                 <p className="mt-1 text-xs text-muted-foreground">The name your agent uses to introduce itself.</p>
               </div>
               <div>
@@ -115,7 +273,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>After-Hours Greeting</Label>
-                <Textarea defaultValue="Thanks for calling Maria's Salon. We're currently closed, but I can still help you book an appointment or take a message. How can I help?" className="mt-1.5" rows={3} disabled={!isEditing("identity")} />
+                <Textarea value={afterHoursGreeting} onChange={e => setAfterHoursGreeting(e.target.value)} className="mt-1.5" rows={3} disabled={!isEditing("identity")} />
                 <p className="mt-1 text-xs text-muted-foreground">Used outside your business hours.</p>
               </div>
             </CardContent>
@@ -124,24 +282,14 @@ export default function AgentConfig() {
 
         {/* Business Context */}
         <TabsContent value="context" className="space-y-6">
-          <TabEditControls editing={isEditing("context")} onEdit={() => setTabEditing("context", true)} onSave={() => handleSave("context")} />
+          <TabEditControls editing={isEditing("context")} onEdit={() => setTabEditing("context", true)} onSave={() => handleSave("context")} saving={saving} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Business Context</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label>Business Description</Label>
-                <Textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-1.5" rows={4} disabled={!isEditing("context")} />
+                <Textarea value={businessDescription} onChange={e => setBusinessDescription(e.target.value)} className="mt-1.5" rows={4} disabled={!isEditing("context")} />
                 <p className="mt-1 text-xs text-muted-foreground">Help the AI understand your business so it can answer questions accurately.</p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Industry</Label>
-                  <Input defaultValue="Salon / Spa" className="mt-1.5" disabled={!isEditing("context")} />
-                </div>
-                <div>
-                  <Label>Location</Label>
-                  <Input defaultValue="San Francisco, CA" className="mt-1.5" disabled={!isEditing("context")} />
-                </div>
               </div>
               <div>
                 <Label>Business Hours</Label>
@@ -151,7 +299,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Special Instructions</Label>
-                <Textarea defaultValue="Always mention that we offer a 10% first-time customer discount. If asked about parking, let them know there's free parking in the lot behind the building." className="mt-1.5" rows={3} disabled={!isEditing("context")} />
+                <Textarea value={specialInstructions} onChange={e => setSpecialInstructions(e.target.value)} className="mt-1.5" rows={3} disabled={!isEditing("context")} />
                 <p className="mt-1 text-xs text-muted-foreground">Custom instructions or policies the AI should always follow.</p>
               </div>
             </CardContent>
@@ -162,13 +310,12 @@ export default function AgentConfig() {
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">Your agent uses these to answer caller questions. Manage them from their respective pages.</p>
               {[
-                { label: "Services", count: 5 },
-                { label: "Products", count: 4 },
-                { label: "FAQs", count: 5 },
+                { label: "Services" },
+                { label: "Products" },
+                { label: "FAQs" },
               ].map((source, i) => (
                 <div key={i} className="flex items-center justify-between rounded-lg border p-3">
                   <span className="text-sm text-foreground">{source.label}</span>
-                  <span className="text-xs text-muted-foreground">{source.count} items</span>
                 </div>
               ))}
             </CardContent>
@@ -177,7 +324,7 @@ export default function AgentConfig() {
 
         {/* Tone & Style */}
         <TabsContent value="behavior" className="space-y-6">
-          <TabEditControls editing={isEditing("behavior")} onEdit={() => setTabEditing("behavior", true)} onSave={() => handleSave("behavior")} />
+          <TabEditControls editing={isEditing("behavior")} onEdit={() => setTabEditing("behavior", true)} onSave={() => handleSave("behavior")} saving={saving} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Tone & Response Style</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -192,11 +339,10 @@ export default function AgentConfig() {
                     <SelectItem value="energetic">Energetic & Upbeat</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="mt-1 text-xs text-muted-foreground">How your agent sounds during conversations.</p>
               </div>
               <div>
                 <Label>Response Style</Label>
-                <Select value={style} onValueChange={setStyle} disabled={!isEditing("behavior")}>
+                <Select value={responseStyle} onValueChange={setResponseStyle} disabled={!isEditing("behavior")}>
                   <SelectTrigger className="mt-1.5" disabled={!isEditing("behavior")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="concise">Concise — Short & direct answers</SelectItem>
@@ -207,7 +353,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Language</Label>
-                <Select defaultValue="en" disabled={!isEditing("behavior")}>
+                <Select value={language} onValueChange={setLanguage} disabled={!isEditing("behavior")}>
                   <SelectTrigger className="mt-1.5" disabled={!isEditing("behavior")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
@@ -224,12 +370,12 @@ export default function AgentConfig() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Fallback Message</Label>
-                <Textarea defaultValue="I'm sorry, I don't have that information right now. Would you like me to have someone call you back?" className="mt-1.5" rows={2} disabled={!isEditing("behavior")} />
+                <Textarea value={fallbackMessage} onChange={e => setFallbackMessage(e.target.value)} className="mt-1.5" rows={2} disabled={!isEditing("behavior")} />
                 <p className="mt-1 text-xs text-muted-foreground">Used when the AI doesn't know the answer.</p>
               </div>
               <div>
                 <Label>Max Clarification Attempts</Label>
-                <Select defaultValue="3" disabled={!isEditing("behavior")}>
+                <Select value={maxClarification} onValueChange={setMaxClarification} disabled={!isEditing("behavior")}>
                   <SelectTrigger className="mt-1.5" disabled={!isEditing("behavior")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="2">2 attempts</SelectItem>
@@ -237,14 +383,13 @@ export default function AgentConfig() {
                     <SelectItem value="5">5 attempts</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="mt-1 text-xs text-muted-foreground">How many times the agent tries to understand before escalating.</p>
               </div>
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
                   <p className="text-sm font-medium text-foreground">Offer callback on fallback</p>
                   <p className="text-xs text-muted-foreground">When the AI can't help, offer to take a callback request</p>
                 </div>
-                <Switch defaultChecked disabled={!isEditing("behavior")} />
+                <Switch checked={offerCallback} onCheckedChange={setOfferCallback} disabled={!isEditing("behavior")} />
               </div>
             </CardContent>
           </Card>
@@ -252,25 +397,22 @@ export default function AgentConfig() {
 
         {/* Actions */}
         <TabsContent value="actions" className="space-y-6">
-          <TabEditControls editing={isEditing("actions")} onEdit={() => setTabEditing("actions", true)} onSave={() => handleSave("actions")} />
+          <TabEditControls editing={isEditing("actions")} onEdit={() => setTabEditing("actions", true)} onSave={() => handleSave("actions")} saving={saving} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Supported Actions</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">Choose what your AI agent can do during calls.</p>
-              {[
-                { label: "Appointment Booking", desc: "Let callers book appointments with available time slots", enabled: true },
-                { label: "Callback Requests", desc: "Collect caller details and schedule a callback from your team", enabled: true },
-                { label: "Lead Capture", desc: "Gather contact information and interest details from potential customers", enabled: true },
-                { label: "Order Intake", desc: "Accept simple product or service orders over the phone", enabled: false },
-                { label: "FAQ Answering", desc: "Answer common questions using your configured FAQs and business info", enabled: true },
-                { label: "Message Taking", desc: "Take messages when the business is closed or staff is unavailable", enabled: true },
-              ].map((action, i) => (
-                <div key={i} className="flex items-center justify-between rounded-lg border p-4">
+              {actionsList.map((action) => (
+                <div key={action.key} className="flex items-center justify-between rounded-lg border p-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">{action.label}</p>
                     <p className="text-xs text-muted-foreground">{action.desc}</p>
                   </div>
-                  <Switch defaultChecked={action.enabled} disabled={!isEditing("actions")} />
+                  <Switch
+                    checked={enabledActions[action.key as keyof typeof enabledActions]}
+                    onCheckedChange={(v) => setEnabledActions(prev => ({ ...prev, [action.key]: v }))}
+                    disabled={!isEditing("actions")}
+                  />
                 </div>
               ))}
             </CardContent>
@@ -279,33 +421,32 @@ export default function AgentConfig() {
 
         {/* Escalation */}
         <TabsContent value="escalation" className="space-y-6">
-          <TabEditControls editing={isEditing("escalation")} onEdit={() => setTabEditing("escalation", true)} onSave={() => handleSave("escalation")} />
+          <TabEditControls editing={isEditing("escalation")} onEdit={() => setTabEditing("escalation", true)} onSave={() => handleSave("escalation")} saving={saving} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Human Handoff & Escalation</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label>Transfer Phone Number</Label>
-                <Input defaultValue="+1 (555) 000-0000" className="mt-1.5" disabled={!isEditing("escalation")} />
+                <Input value={transferNumber} onChange={e => setTransferNumber(e.target.value)} className="mt-1.5" disabled={!isEditing("escalation")} />
                 <p className="mt-1 text-xs text-muted-foreground">Calls are transferred here when the AI escalates.</p>
               </div>
               <div>
                 <Label>Transfer Announcement</Label>
-                <Textarea defaultValue="Let me connect you with a team member who can help. Please hold for a moment." className="mt-1.5" rows={2} disabled={!isEditing("escalation")} />
+                <Textarea value={transferAnnouncement} onChange={e => setTransferAnnouncement(e.target.value)} className="mt-1.5" rows={2} disabled={!isEditing("escalation")} />
               </div>
               <div className="space-y-3 pt-2">
                 <p className="text-sm font-medium text-foreground">Escalation Triggers</p>
-                {[
-                  { label: "Escalate when negative sentiment is detected", desc: "Transfer angry or frustrated callers to a human", enabled: true },
-                  { label: "Escalate after repeated failed understanding", desc: "Transfer if the AI cannot understand after max attempts", enabled: true },
-                  { label: "Escalate on explicit request", desc: "Transfer immediately when caller asks for a human", enabled: true },
-                  { label: "Escalate for high-value inquiries", desc: "Transfer calls about large orders or custom requests", enabled: false },
-                ].map((rule, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg border p-4">
+                {escalationList.map((rule) => (
+                  <div key={rule.key} className="flex items-center justify-between rounded-lg border p-4">
                     <div>
                       <p className="text-sm font-medium text-foreground">{rule.label}</p>
                       <p className="text-xs text-muted-foreground">{rule.desc}</p>
                     </div>
-                    <Switch defaultChecked={rule.enabled} disabled={!isEditing("escalation")} />
+                    <Switch
+                      checked={escalationRules[rule.key as keyof typeof escalationRules]}
+                      onCheckedChange={(v) => setEscalationRules(prev => ({ ...prev, [rule.key]: v }))}
+                      disabled={!isEditing("escalation")}
+                    />
                   </div>
                 ))}
               </div>
@@ -314,7 +455,7 @@ export default function AgentConfig() {
                   <p className="text-sm font-medium text-foreground">Allow transfer during business hours only</p>
                   <p className="text-xs text-muted-foreground">After hours, offer callback instead of transferring</p>
                 </div>
-                <Switch defaultChecked disabled={!isEditing("escalation")} />
+                <Switch checked={businessHoursOnlyTransfer} onCheckedChange={setBusinessHoursOnlyTransfer} disabled={!isEditing("escalation")} />
               </div>
             </CardContent>
           </Card>
@@ -322,25 +463,22 @@ export default function AgentConfig() {
 
         {/* Call Outcomes */}
         <TabsContent value="outcomes" className="space-y-6">
-          <TabEditControls editing={isEditing("outcomes")} onEdit={() => setTabEditing("outcomes", true)} onSave={() => handleSave("outcomes")} />
+          <TabEditControls editing={isEditing("outcomes")} onEdit={() => setTabEditing("outcomes", true)} onSave={() => handleSave("outcomes")} saving={saving} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Call Outcome Behavior</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">Configure what happens after each type of call outcome.</p>
-              {[
-                { label: "After Booking", desc: "Send a confirmation SMS to the caller", enabled: true },
-                { label: "After Lead Capture", desc: "Send lead details to email or webhook", enabled: true },
-                { label: "After Callback Request", desc: "Create a callback task and notify staff", enabled: true },
-                { label: "After Order", desc: "Send order confirmation to caller and business", enabled: false },
-                { label: "After Escalation", desc: "Log escalation reason and send summary to staff", enabled: true },
-                { label: "After Missed Call", desc: "Send a follow-up SMS to the missed caller", enabled: false },
-              ].map((outcome, i) => (
-                <div key={i} className="flex items-center justify-between rounded-lg border p-4">
+              {outcomeList.map((outcome) => (
+                <div key={outcome.key} className="flex items-center justify-between rounded-lg border p-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">{outcome.label}</p>
                     <p className="text-xs text-muted-foreground">{outcome.desc}</p>
                   </div>
-                  <Switch defaultChecked={outcome.enabled} disabled={!isEditing("outcomes")} />
+                  <Switch
+                    checked={outcomeBehaviors[outcome.key as keyof typeof outcomeBehaviors]}
+                    onCheckedChange={(v) => setOutcomeBehaviors(prev => ({ ...prev, [outcome.key]: v }))}
+                    disabled={!isEditing("outcomes")}
+                  />
                 </div>
               ))}
             </CardContent>
@@ -351,12 +489,12 @@ export default function AgentConfig() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Notification Email</Label>
-                <Input defaultValue="john@mariassalon.com" className="mt-1.5" disabled={!isEditing("outcomes")} />
+                <Input value={notificationEmail} onChange={e => setNotificationEmail(e.target.value)} className="mt-1.5" disabled={!isEditing("outcomes")} />
                 <p className="mt-1 text-xs text-muted-foreground">Where to send call summaries and action notifications.</p>
               </div>
               <div>
                 <Label>Webhook URL (optional)</Label>
-                <Input placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" disabled={!isEditing("outcomes")} />
+                <Input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" disabled={!isEditing("outcomes")} />
                 <p className="mt-1 text-xs text-muted-foreground">Receive call outcome data via webhook for CRM or automation integration.</p>
               </div>
             </CardContent>
