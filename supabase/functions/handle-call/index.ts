@@ -394,14 +394,16 @@ Deno.serve(async (req) => {
           });
         } else {
           // After greeting or AI response → gather speech
-          console.log(`[call.speak.ended] Starting gather (speech)`);
-          await providerAction(call_control_id, "gather", apiKey, {
+          console.log(`[call.speak.ended] Starting gather_using_speak`);
+          await providerAction(call_control_id, "gather_using_speak", apiKey, {
+            payload: ".",
+            voice: "Telnyx.Ultra.a7a59115-2425-4192-844c-1e98ec7d6877",
+            language: "en-US",
             gather_method: "speech",
             speech_model: "enhanced",
-            language: (agent.language as string) === "tr" ? "tr" : "en",
-            speech_timeout: 3,
-            timeout: 20,
-            gather_after_silence: 1,
+            speech_timeout: "auto",
+            timeout: 25,
+            minimum_silence_duration: 800,
           });
         }
         break;
