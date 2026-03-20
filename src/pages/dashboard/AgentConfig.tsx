@@ -296,7 +296,7 @@ export default function AgentConfig() {
                   <p className="text-sm font-medium text-foreground">Allow transfer during business hours only</p>
                   <p className="text-xs text-muted-foreground">After hours, offer callback instead of transferring</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch defaultChecked disabled={!editing} />
               </div>
             </CardContent>
           </Card>
