@@ -478,7 +478,9 @@ Deno.serve(async (req) => {
       }
 
       case "call.gather.ended":
-      case "call.speak_and_gather.ended": {
+      case "call.speak_and_gather.ended":
+      case "call.gather_using_speak.ended":
+      case "call.gather_stopped": {
         const transcript = payload.speech_transcript as string;
 
         console.log(`[gather] Transcript: "${transcript || "(empty)"}"`);
