@@ -236,6 +236,7 @@ export type Database = {
       }
       calls: {
         Row: {
+          conversation_messages: Json
           cost_cents: number | null
           created_at: string
           duration_seconds: number | null
@@ -255,6 +256,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          conversation_messages?: Json
           cost_cents?: number | null
           created_at?: string
           duration_seconds?: number | null
@@ -274,6 +276,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          conversation_messages?: Json
           cost_cents?: number | null
           created_at?: string
           duration_seconds?: number | null
