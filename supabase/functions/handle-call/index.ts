@@ -409,7 +409,8 @@ Deno.serve(async (req) => {
         break;
       }
 
-      case "call.gather.ended": {
+      case "call.gather.ended":
+      case "call.speak_and_gather.ended": {
         const transcript = payload.speech_transcript as string;
         const convKey = call_leg_id || call_control_id;
         const conv = conversations.get(convKey);
