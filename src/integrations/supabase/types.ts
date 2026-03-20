@@ -81,6 +81,7 @@ export type Database = {
         Row: {
           after_hours_greeting: string | null
           business_description: string | null
+          business_hours: Json
           business_hours_only_transfer: boolean
           created_at: string
           enabled_actions: Json
@@ -108,6 +109,7 @@ export type Database = {
         Insert: {
           after_hours_greeting?: string | null
           business_description?: string | null
+          business_hours?: Json
           business_hours_only_transfer?: boolean
           created_at?: string
           enabled_actions?: Json
@@ -135,6 +137,7 @@ export type Database = {
         Update: {
           after_hours_greeting?: string | null
           business_description?: string | null
+          business_hours?: Json
           business_hours_only_transfer?: boolean
           created_at?: string
           enabled_actions?: Json

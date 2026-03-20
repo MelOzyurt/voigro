@@ -146,6 +146,76 @@ async function getAIResponse(
   }
 }
 
+function parseUtcOffset(tz: string): number {
+  const match = (tz || "UTC+0").match(/^UTC([+-])(\d{1,2})(?::(\d{2}))?$/);
+  if (!match) return 0;
+  const sign = match[1] === "+" ? 1 : -1;
+  return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3] || "0", 10));
+}
+
+function isWithinBusinessHours(bh: Record<string, unknown>): boolean {
+  try {
+    const offsetMin = parseUtcOffset((bh.timezone as string) || "UTC+0");
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const local = new Date(utcMs + offsetMin * 60000);
+
+    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const dayName = dayNames[local.getDay()];
+    const schedule = (bh.weekly_schedule as Record<string, Record<string, unknown>>)?.[dayName];
+    if (!schedule || !schedule.open) return false;
+
+    const currentMinutes = local.getHours() * 60 + local.getMinutes();
+    const [fh, fm] = ((schedule.from as string) || "09:00").split(":").map(Number);
+    const [th, tm] = ((schedule.to as string) || "17:00").split(":").map(Number);
+    return currentMinutes >= fh * 60 + fm && currentMinutes < th * 60 + tm;
+  } catch {
+    return true; // Default to open on error
+  }
+}
+
+function generateBusinessHoursSummary(bh: Record<string, unknown>): string {
+  try {
+    const ws = bh.weekly_schedule as Record<string, Record<string, unknown>> | undefined;
+    if (!ws) return "";
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    const dayLabels: Record<string, string> = {
+      monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday",
+      thursday: "Thursday", friday: "Friday", saturday: "Saturday", sunday: "Sunday",
+    };
+
+    const parts: string[] = [];
+    const groups: { days: string[]; from: string; to: string }[] = [];
+    const closed: string[] = [];
+
+    for (const d of days) {
+      const s = ws[d];
+      if (!s || !s.open) { closed.push(dayLabels[d]); continue; }
+      const last = groups[groups.length - 1];
+      if (last && last.from === s.from && last.to === s.to) {
+        last.days.push(dayLabels[d]);
+      } else {
+        groups.push({ days: [dayLabels[d]], from: s.from as string, to: s.to as string });
+      }
+    }
+
+    for (const g of groups) {
+      const range = g.days.length > 2 ? `${g.days[0]} to ${g.days[g.days.length - 1]}` : g.days.join(" and ");
+      parts.push(`Open ${range} ${g.from}–${g.to} (${bh.timezone || "UTC+0"}).`);
+    }
+    if (closed.length > 0) parts.push(`Closed ${closed.join(" and ")}.`);
+
+    const ph = bh.public_holidays as Record<string, unknown> | undefined;
+    if (ph?.enabled && ph?.closed_on_holidays) {
+      parts.push(`Automatically closed on ${ph.country || "GB"} public holidays.`);
+    }
+
+    return parts.join(" ");
+  } catch {
+    return "";
+  }
+}
+
 function buildSystemPrompt(agent: Record<string, unknown>, org: Record<string, unknown>): string {
   const parts = [
     `You are ${agent.name || "an AI assistant"}, a phone assistant for ${org.name || "our business"}.`,
@@ -154,6 +224,14 @@ function buildSystemPrompt(agent: Record<string, unknown>, org: Record<string, u
   if (agent.business_description) {
     parts.push(`About the business: ${agent.business_description}`);
   }
+
+  // Business hours from structured data
+  const bh = agent.business_hours as Record<string, unknown> | undefined;
+  if (bh) {
+    const summary = generateBusinessHoursSummary(bh);
+    if (summary) parts.push(`Business hours: ${summary}`);
+  }
+
   if (agent.special_instructions) {
     parts.push(`Special instructions: ${agent.special_instructions}`);
   }
@@ -269,10 +347,16 @@ Deno.serve(async (req) => {
       }
 
       case "call.answered": {
-        // Speak greeting
-        const greeting =
-          (agent.greeting as string) ||
-          "Hello, thank you for calling. How can I help you today?";
+        // Check business hours to determine greeting
+        const bh = agent.business_hours as Record<string, unknown> | undefined;
+        const withinHours = bh ? isWithinBusinessHours(bh) : true;
+        
+        let greeting: string;
+        if (!withinHours && agent.after_hours_greeting) {
+          greeting = agent.after_hours_greeting as string;
+        } else {
+          greeting = (agent.greeting as string) || "Hello, thank you for calling. How can I help you today?";
+        }
 
         await providerAction(call_control_id, "speak", apiKey, {
           payload: greeting,
