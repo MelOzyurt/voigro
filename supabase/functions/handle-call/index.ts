@@ -486,8 +486,15 @@ Deno.serve(async (req) => {
       case "call.gather_using_speak.ended":
       case "call.gather_stopped": {
         const transcript = payload.speech_transcript as string;
+        const gatherStatus = (payload as Record<string, unknown>).status as string;
 
-        console.log(`[gather] Transcript: "${transcript || "(empty)"}"`);
+        console.log(`[gather] Transcript: "${transcript || "(empty)"}", status: ${gatherStatus}`);
+
+        // If gather ended because call hung up, don't try to respond
+        if (gatherStatus === "call_hangup") {
+          console.log(`[gather] Call already hung up, skipping response`);
+          break;
+        }
 
         if (!transcript || transcript.trim() === "") {
           console.log(`[gather] No speech, asking to repeat`);
@@ -502,7 +509,7 @@ Deno.serve(async (req) => {
             speech_timeout: "auto",
             timeout: 30,
             minimum_silence_duration: 800,
-            client_state: makeState("responding"),
+            client_state: makeState("responding", { gatherActive: true }),
           });
           break;
         }
