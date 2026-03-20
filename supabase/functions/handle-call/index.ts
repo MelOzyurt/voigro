@@ -347,10 +347,16 @@ Deno.serve(async (req) => {
       }
 
       case "call.answered": {
-        // Speak greeting
-        const greeting =
-          (agent.greeting as string) ||
-          "Hello, thank you for calling. How can I help you today?";
+        // Check business hours to determine greeting
+        const bh = agent.business_hours as Record<string, unknown> | undefined;
+        const withinHours = bh ? isWithinBusinessHours(bh) : true;
+        
+        let greeting: string;
+        if (!withinHours && agent.after_hours_greeting) {
+          greeting = agent.after_hours_greeting as string;
+        } else {
+          greeting = (agent.greeting as string) || "Hello, thank you for calling. How can I help you today?";
+        }
 
         await providerAction(call_control_id, "speak", apiKey, {
           payload: greeting,
