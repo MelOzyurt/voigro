@@ -10,15 +10,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization, useOrgId } from "@/hooks/use-organization";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAiAgent } from "@/hooks/use-ai-agent";
+import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
 
 export default function SettingsPage() {
   const { data: org, isLoading: orgLoading } = useOrganization();
+  const { data: agent } = useAiAgent();
   const orgId = useOrgId();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [businessHours, setBusinessHours] = useState<BusinessHoursData | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -26,7 +30,6 @@ export default function SettingsPage() {
     industry: "",
     location: "",
     website: "",
-    opening_hours: "",
     primary_business_number: "",
     timezone: "",
   });
@@ -39,7 +42,6 @@ export default function SettingsPage() {
         industry: org.industry ?? "",
         location: org.location ?? "",
         website: org.website ?? "",
-        opening_hours: org.opening_hours ?? "",
         primary_business_number: org.primary_business_number ?? "",
         timezone: org.timezone ?? "UTC",
       });
@@ -62,11 +64,20 @@ export default function SettingsPage() {
           industry: form.industry || null,
           location: form.location || null,
           website: form.website || null,
-          opening_hours: form.opening_hours || null,
           primary_business_number: form.primary_business_number || null,
           timezone: form.timezone || "UTC",
         })
         .eq("id", orgId);
+
+      // Save business hours to ai_agents if changed
+      if (businessHours && agent?.id) {
+        const { error: agentError } = await supabase
+          .from("ai_agents")
+          .update({ business_hours: JSON.parse(JSON.stringify(businessHours)) })
+          .eq("id", agent.id);
+        if (agentError) throw agentError;
+        queryClient.invalidateQueries({ queryKey: ["ai-agent"] });
+      }
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["organization"] });
       toast.success("Settings saved.");
@@ -187,8 +198,27 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <Label>Opening Hours</Label>
-                <Input value={form.opening_hours} onChange={e => updateField("opening_hours", e.target.value)} className="mt-1.5" />
+                <Label>Business Hours</Label>
+                <div className="mt-2">
+                  <BusinessHours
+                    value={businessHours ?? (agent?.business_hours as unknown as BusinessHoursData) ?? {
+                      timezone: "UTC+0",
+                      weekly_schedule: {
+                        monday: { open: true, from: "09:00", to: "17:00" },
+                        tuesday: { open: true, from: "09:00", to: "17:00" },
+                        wednesday: { open: true, from: "09:00", to: "17:00" },
+                        thursday: { open: true, from: "09:00", to: "17:00" },
+                        friday: { open: true, from: "09:00", to: "17:00" },
+                        saturday: { open: false, from: "09:00", to: "13:00" },
+                        sunday: { open: false, from: "09:00", to: "13:00" },
+                      },
+                      public_holidays: { enabled: true, country: "GB", closed_on_holidays: true },
+                      custom_closures: [],
+                      custom_openings: [],
+                    }}
+                    onChange={setBusinessHours}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
