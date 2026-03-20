@@ -453,9 +453,13 @@ Deno.serve(async (req) => {
 
       case "call.speak.ended": {
         const phase = state.phase || "unknown";
-        console.log(`[call.speak.ended] Phase: ${phase}, orgId: ${organizationId}, callId: ${callId}`);
+        const gatherActive = state.gatherActive || false;
+        console.log(`[call.speak.ended] Phase: ${phase}, gatherActive: ${gatherActive}, orgId: ${organizationId}, callId: ${callId}`);
 
-        if (phase === "transferring" && agent.transfer_number) {
+        if (gatherActive) {
+          // This speak.ended came from gather_using_speak — gather is already running, ignore
+          console.log(`[call.speak.ended] gather_using_speak active, ignoring speak.ended`);
+        } else if (phase === "transferring" && agent.transfer_number) {
           console.log(`[call.speak.ended] Transferring to ${agent.transfer_number}`);
           await providerAction(call_control_id, "transfer", apiKey, {
             to: agent.transfer_number,
