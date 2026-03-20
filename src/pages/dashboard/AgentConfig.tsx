@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Bot, Save } from "lucide-react";
+import { Bot, Save, Pencil, Lock } from "lucide-react";
 import { useState } from "react";
 import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
 
