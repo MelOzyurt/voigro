@@ -30,7 +30,6 @@ export default function SettingsPage() {
     industry: "",
     location: "",
     website: "",
-    opening_hours: "",
     primary_business_number: "",
     timezone: "",
   });
