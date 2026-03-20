@@ -310,6 +310,7 @@ Deno.serve(async (req) => {
     const payload = event?.data?.payload;
 
     console.log(`[Event] ${eventType || "unknown"}`);
+    console.log("[WEBHOOK] Full event:", JSON.stringify(event?.data));
 
     if (!eventType || !payload) {
       return new Response(JSON.stringify({ ok: true }), {
