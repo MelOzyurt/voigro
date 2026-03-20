@@ -136,11 +136,11 @@ export default function AgentConfig() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Industry</Label>
-                  <Input defaultValue="Salon / Spa" className="mt-1.5" readOnly />
+                  <Input defaultValue="Salon / Spa" className="mt-1.5" disabled={!isEditing("context")} />
                 </div>
                 <div>
                   <Label>Location</Label>
-                  <Input defaultValue="San Francisco, CA" className="mt-1.5" readOnly />
+                  <Input defaultValue="San Francisco, CA" className="mt-1.5" disabled={!isEditing("context")} />
                 </div>
               </div>
               <div>
