@@ -446,16 +446,20 @@ Deno.serve(async (req) => {
           speech_timeout: "auto",
           timeout: 30,
           minimum_silence_duration: 800,
-          client_state: makeState("greeting"),
+          client_state: makeState("greeting", { gatherActive: true }),
         });
         break;
       }
 
       case "call.speak.ended": {
         const phase = state.phase || "unknown";
-        console.log(`[call.speak.ended] Phase: ${phase}, orgId: ${organizationId}, callId: ${callId}`);
+        const gatherActive = state.gatherActive || false;
+        console.log(`[call.speak.ended] Phase: ${phase}, gatherActive: ${gatherActive}, orgId: ${organizationId}, callId: ${callId}`);
 
-        if (phase === "transferring" && agent.transfer_number) {
+        if (gatherActive) {
+          // This speak.ended came from gather_using_speak — gather is already running, ignore
+          console.log(`[call.speak.ended] gather_using_speak active, ignoring speak.ended`);
+        } else if (phase === "transferring" && agent.transfer_number) {
           console.log(`[call.speak.ended] Transferring to ${agent.transfer_number}`);
           await providerAction(call_control_id, "transfer", apiKey, {
             to: agent.transfer_number,
@@ -482,8 +486,15 @@ Deno.serve(async (req) => {
       case "call.gather_using_speak.ended":
       case "call.gather_stopped": {
         const transcript = payload.speech_transcript as string;
+        const gatherStatus = (payload as Record<string, unknown>).status as string;
 
-        console.log(`[gather] Transcript: "${transcript || "(empty)"}"`);
+        console.log(`[gather] Transcript: "${transcript || "(empty)"}", status: ${gatherStatus}`);
+
+        // If gather ended because call hung up, don't try to respond
+        if (gatherStatus === "call_hangup") {
+          console.log(`[gather] Call already hung up, skipping response`);
+          break;
+        }
 
         if (!transcript || transcript.trim() === "") {
           console.log(`[gather] No speech, asking to repeat`);
@@ -498,7 +509,7 @@ Deno.serve(async (req) => {
             speech_timeout: "auto",
             timeout: 30,
             minimum_silence_duration: 800,
-            client_state: makeState("responding"),
+            client_state: makeState("responding", { gatherActive: true }),
           });
           break;
         }
@@ -545,7 +556,7 @@ Deno.serve(async (req) => {
             speech_timeout: "auto",
             timeout: 30,
             minimum_silence_duration: 800,
-            client_state: makeState("responding"),
+            client_state: makeState("responding", { gatherActive: true }),
           });
         }
         break;
