@@ -115,7 +115,7 @@ export default function AgentConfig() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Business Description</Label>
-                <Textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-1.5" rows={4} />
+                <Textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-1.5" rows={4} disabled={!editing} />
                 <p className="mt-1 text-xs text-muted-foreground">Help the AI understand your business so it can answer questions accurately.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
