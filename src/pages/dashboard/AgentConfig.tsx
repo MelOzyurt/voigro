@@ -7,10 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bot, Save, Pencil, Lock } from "lucide-react";
+import { Bot, Save, Pencil, Lock, Rocket } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAiAgent, useUpdateAiAgent, useCreateAiAgent } from "@/hooks/use-ai-agent";
-import { useOrgId } from "@/hooks/use-organization";
 import { toast } from "sonner";
 import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
 import type { Json } from "@/integrations/supabase/types";
@@ -58,7 +57,7 @@ const DEFAULT_OUTCOME_BEHAVIORS = {
 
 type TabKey = "identity" | "context" | "behavior" | "actions" | "escalation" | "outcomes";
 
-function TabEditControls({ editing, onEdit, onSave, saving }: { editing: boolean; onEdit: () => void; onSave: () => void; saving?: boolean }) {
+function TabEditControls({ editing, onEdit, onSave }: { editing: boolean; onEdit: () => void; onSave: () => void }) {
   return (
     <div className="flex items-center gap-2 mb-4">
       {!editing ? (
@@ -71,8 +70,8 @@ function TabEditControls({ editing, onEdit, onSave, saving }: { editing: boolean
           </span>
         </>
       ) : (
-        <Button size="sm" onClick={onSave} disabled={saving}>
-          <Save className="mr-2 h-3.5 w-3.5" /> {saving ? "Saving…" : "Save Changes"}
+        <Button size="sm" variant="outline" onClick={onSave}>
+          <Save className="mr-2 h-3.5 w-3.5" /> Save
         </Button>
       )}
     </div>
@@ -93,15 +92,13 @@ export default function AgentConfig() {
   const { data: agent, isLoading } = useAiAgent();
   const updateAgent = useUpdateAiAgent();
   const createAgent = useCreateAiAgent();
-  const orgId = useOrgId();
+  const hasAgent = !!agent?.id;
 
   // Form state
   const [name, setName] = useState("");
   const [greeting, setGreeting] = useState("");
   const [afterHoursGreeting, setAfterHoursGreeting] = useState("");
   const [businessDescription, setBusinessDescription] = useState("");
-  const [industry, setIndustry] = useState("");
-  const [location, setLocation] = useState("");
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [businessHours, setBusinessHours] = useState<BusinessHoursData>(DEFAULT_BUSINESS_HOURS);
   const [tone, setTone] = useState("friendly");
@@ -124,7 +121,7 @@ export default function AgentConfig() {
     actions: false, escalation: false, outcomes: false,
   });
 
-  // Populate form from DB
+  // Populate form from DB if agent exists
   useEffect(() => {
     if (!agent) return;
     setName(agent.name || "");
@@ -143,7 +140,6 @@ export default function AgentConfig() {
     setBusinessHoursOnlyTransfer(agent.business_hours_only_transfer ?? false);
     setNotificationEmail(agent.notification_email || "");
     setWebhookUrl(agent.webhook_url || "");
-
     if (agent.business_hours && typeof agent.business_hours === "object") {
       setBusinessHours(agent.business_hours as unknown as BusinessHoursData);
     }
@@ -162,7 +158,12 @@ export default function AgentConfig() {
   const setTabEditing = (tab: TabKey, value: boolean) =>
     setEditingTabs(prev => ({ ...prev, [tab]: value }));
 
-  const getUpdates = () => ({
+  // Save = just lock the tab (UI only)
+  const handleTabSave = (tab: TabKey) => {
+    setTabEditing(tab, false);
+  };
+
+  const getPayload = () => ({
     name,
     greeting,
     after_hours_greeting: afterHoursGreeting,
@@ -185,20 +186,24 @@ export default function AgentConfig() {
     webhook_url: webhookUrl,
   });
 
-  const saving = updateAgent.isPending || createAgent.isPending;
+  // Create Agent / Update Agent = push to DB
+  const pushing = updateAgent.isPending || createAgent.isPending;
 
-  const handleSave = async (tab: TabKey) => {
-    const updates = getUpdates();
+  const handlePushToDb = async () => {
+    // Lock all open tabs first
+    setEditingTabs({ identity: false, context: false, behavior: false, actions: false, escalation: false, outcomes: false });
+
+    const payload = getPayload();
     try {
-      if (agent?.id) {
-        await updateAgent.mutateAsync({ id: agent.id, updates });
+      if (hasAgent) {
+        await updateAgent.mutateAsync({ id: agent!.id, updates: payload });
+        toast.success("Agent updated successfully");
       } else {
-        await createAgent.mutateAsync(updates);
+        await createAgent.mutateAsync(payload);
+        toast.success("Agent created successfully");
       }
-      setTabEditing(tab, false);
-      toast.success("Agent settings saved");
     } catch (e: any) {
-      toast.error(e.message || "Failed to save");
+      toast.error(e.message || "Failed to save agent");
     }
   };
 
@@ -231,9 +236,15 @@ export default function AgentConfig() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">AI Agent</h1>
-        <p className="text-sm text-muted-foreground">Configure how your AI phone agent behaves on calls.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">AI Agent</h1>
+          <p className="text-sm text-muted-foreground">Configure how your AI phone agent behaves on calls.</p>
+        </div>
+        <Button onClick={handlePushToDb} disabled={pushing}>
+          <Rocket className="mr-2 h-4 w-4" />
+          {pushing ? "Saving…" : hasAgent ? "Update Agent" : "Create Agent"}
+        </Button>
       </div>
 
       <Tabs defaultValue="identity" className="space-y-6">
@@ -248,7 +259,7 @@ export default function AgentConfig() {
 
         {/* Identity */}
         <TabsContent value="identity" className="space-y-6">
-          <TabEditControls editing={isEditing("identity")} onEdit={() => setTabEditing("identity", true)} onSave={() => handleSave("identity")} saving={saving} />
+          <TabEditControls editing={isEditing("identity")} onEdit={() => setTabEditing("identity", true)} onSave={() => handleTabSave("identity")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Agent Identity</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -282,7 +293,7 @@ export default function AgentConfig() {
 
         {/* Business Context */}
         <TabsContent value="context" className="space-y-6">
-          <TabEditControls editing={isEditing("context")} onEdit={() => setTabEditing("context", true)} onSave={() => handleSave("context")} saving={saving} />
+          <TabEditControls editing={isEditing("context")} onEdit={() => setTabEditing("context", true)} onSave={() => handleTabSave("context")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Business Context</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -309,13 +320,9 @@ export default function AgentConfig() {
             <CardHeader><CardTitle className="font-display text-base">Knowledge Sources</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">Your agent uses these to answer caller questions. Manage them from their respective pages.</p>
-              {[
-                { label: "Services" },
-                { label: "Products" },
-                { label: "FAQs" },
-              ].map((source, i) => (
+              {["Services", "Products", "FAQs"].map((label, i) => (
                 <div key={i} className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-foreground">{source.label}</span>
+                  <span className="text-sm text-foreground">{label}</span>
                 </div>
               ))}
             </CardContent>
@@ -324,7 +331,7 @@ export default function AgentConfig() {
 
         {/* Tone & Style */}
         <TabsContent value="behavior" className="space-y-6">
-          <TabEditControls editing={isEditing("behavior")} onEdit={() => setTabEditing("behavior", true)} onSave={() => handleSave("behavior")} saving={saving} />
+          <TabEditControls editing={isEditing("behavior")} onEdit={() => setTabEditing("behavior", true)} onSave={() => handleTabSave("behavior")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Tone & Response Style</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -397,7 +404,7 @@ export default function AgentConfig() {
 
         {/* Actions */}
         <TabsContent value="actions" className="space-y-6">
-          <TabEditControls editing={isEditing("actions")} onEdit={() => setTabEditing("actions", true)} onSave={() => handleSave("actions")} saving={saving} />
+          <TabEditControls editing={isEditing("actions")} onEdit={() => setTabEditing("actions", true)} onSave={() => handleTabSave("actions")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Supported Actions</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -421,7 +428,7 @@ export default function AgentConfig() {
 
         {/* Escalation */}
         <TabsContent value="escalation" className="space-y-6">
-          <TabEditControls editing={isEditing("escalation")} onEdit={() => setTabEditing("escalation", true)} onSave={() => handleSave("escalation")} saving={saving} />
+          <TabEditControls editing={isEditing("escalation")} onEdit={() => setTabEditing("escalation", true)} onSave={() => handleTabSave("escalation")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Human Handoff & Escalation</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -463,7 +470,7 @@ export default function AgentConfig() {
 
         {/* Call Outcomes */}
         <TabsContent value="outcomes" className="space-y-6">
-          <TabEditControls editing={isEditing("outcomes")} onEdit={() => setTabEditing("outcomes", true)} onSave={() => handleSave("outcomes")} saving={saving} />
+          <TabEditControls editing={isEditing("outcomes")} onEdit={() => setTabEditing("outcomes", true)} onSave={() => handleTabSave("outcomes")} />
           <Card>
             <CardHeader><CardTitle className="font-display text-base">Call Outcome Behavior</CardTitle></CardHeader>
             <CardContent className="space-y-4">
