@@ -272,7 +272,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Transfer Announcement</Label>
-                <Textarea defaultValue="Let me connect you with a team member who can help. Please hold for a moment." className="mt-1.5" rows={2} />
+                <Textarea defaultValue="Let me connect you with a team member who can help. Please hold for a moment." className="mt-1.5" rows={2} disabled={!editing} />
               </div>
               <div className="space-y-3 pt-2">
                 <p className="text-sm font-medium text-foreground">Escalation Triggers</p>
