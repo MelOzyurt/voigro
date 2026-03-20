@@ -228,7 +228,7 @@ export default function AgentConfig() {
                   <p className="text-sm font-medium text-foreground">Offer callback on fallback</p>
                   <p className="text-xs text-muted-foreground">When the AI can't help, offer to take a callback request</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch defaultChecked disabled={!editing} />
               </div>
             </CardContent>
           </Card>
