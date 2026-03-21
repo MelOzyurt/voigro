@@ -73,6 +73,9 @@ export default function Services() {
           <p className="text-sm text-muted-foreground">Manage the services your AI agent knows about.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setAiOpen(true)}>
+            <Sparkles className="mr-2 h-4 w-4" /> AI Import
+          </Button>
           <Button variant="outline" onClick={() => setBulkOpen(true)}>
             <Upload className="mr-2 h-4 w-4" /> Bulk Import
           </Button>
