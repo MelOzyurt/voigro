@@ -112,6 +112,13 @@ export default function AdminSettings() {
     }
   }, [settings, llmEditing]);
 
+  useEffect(() => {
+    if (settings && !sttEditing) {
+      const s = settings as Record<string, unknown>;
+      setDeepgramApiKey((s.deepgram_api_key as string) ?? "");
+    }
+  }, [settings, sttEditing]);
+
   const resetVoiceFields = () => {
     if (!settings) return;
     const s = settings as Record<string, unknown>;
