@@ -57,6 +57,7 @@ function decodeState(clientState: string | undefined): CallState {
 async function getPlatformConfig(supabase: ReturnType<typeof createClient>): Promise<{
   providerApiKey: string;
   llm: LlmConfig;
+  deepgramApiKey: string;
 }> {
   const { data } = await supabase
     .from("platform_settings")
@@ -72,6 +73,7 @@ async function getPlatformConfig(supabase: ReturnType<typeof createClient>): Pro
       model: (s.llm_model as string) || "google/gemini-2.5-flash",
       language: (s.llm_language as string) || "en",
     },
+    deepgramApiKey: (s.deepgram_api_key as string) || "",
   };
 }
 
@@ -416,6 +418,7 @@ Deno.serve(async (req) => {
     const platformConfig = await getPlatformConfig(supabase);
     const apiKey = platformConfig.providerApiKey;
     const llmConfig = platformConfig.llm;
+    const deepgramApiKey = platformConfig.deepgramApiKey;
 
     const makeState = (phase: string, extra: Record<string, unknown> = {}): string =>
       encodeState(phase, { orgId: organizationId, callId, ...extra });
@@ -489,17 +492,16 @@ Deno.serve(async (req) => {
             to: agent.transfer_number,
           });
         } else if (phase === "greeting" || phase === "responding") {
-          // Step 2: After speak ends, start plain gather for speech capture
-          console.log(`[gather-start] Starting plain gather for phase=${phase}`);
-          await providerAction(call_control_id, "gather", apiKey, {
-            gather_method: "speech",
-            input: ["speech"],
-            language: "en-US",
-            speech_model: "default",
-            speech_timeout: "auto",
-            timeout: 25,
-            minimum_silence_duration: 500,
-            client_state: makeState(phase, { gatherActive: true }),
+          // Step 2: After speak ends, start recording for Deepgram STT
+          console.log(`[record-start] Starting record for phase=${phase}`);
+          await providerAction(call_control_id, "record_start", apiKey, {
+            format: "wav",
+            channels: "single",
+            play_beep: false,
+            timeout_secs: 25,
+            trim_silence: false,
+            minimum_silence_duration: 1500,
+            client_state: makeState(phase, { recordingActive: true }),
           });
         } else {
           console.log(`[call.speak.ended] Ignoring for phase=${phase}`);
@@ -507,37 +509,72 @@ Deno.serve(async (req) => {
         break;
       }
 
-      case "call.gather.ended":
-      case "call.speak_and_gather.ended":
-      case "call.gather_using_speak.ended":
-      case "call.gather_stopped": {
+      case "call.recording.saved": {
         const p = payload as Record<string, unknown>;
-        console.log(`[gather-ended] Full payload:`, JSON.stringify(p));
+        console.log("[recording] Recording saved:", JSON.stringify(p));
 
-        // Resolve transcript from multiple possible fields
-        const transcript = (
-          (p.speech_transcript as string) ||
-          (p.transcript as string) ||
-          (p.text as string) ||
-          ((p.results as Record<string, unknown>)?.text as string) ||
-          ((p.metadata as Record<string, unknown>)?.transcript as string) ||
-          ""
-        ).trim();
+        const recordingUrls = p.recording_urls as Record<string, string> | undefined;
+        const recordingUrl = recordingUrls?.wav || recordingUrls?.mp3 || "";
 
-        const gatherStatus = p.status as string;
-
-        console.log(`[transcript] Resolved: "${transcript || "(empty)"}"`);
-        console.log(`[gather-ended] Status: ${gatherStatus}`);
-
-        // If gather ended because call hung up, don't try to respond
-        if (gatherStatus === "call_hangup") {
-          console.log(`[gather-ended] Call already hung up, skipping response`);
+        if (!recordingUrl) {
+          console.error("[recording] No recording URL found");
           break;
         }
 
+        // Download recording from Telnyx
+        console.log("[recording] Downloading from:", recordingUrl);
+        const audioRes = await fetch(recordingUrl);
+        if (!audioRes.ok) {
+          console.error("[recording] Download failed:", audioRes.status);
+          break;
+        }
+        const audioBuffer = await audioRes.arrayBuffer();
+        console.log("[recording] Downloaded, size:", audioBuffer.byteLength, "bytes");
+
+        // Send to Deepgram nova-2-phonecall for STT
+        if (!deepgramApiKey) {
+          console.error("[deepgram] No Deepgram API key configured");
+          await providerAction(call_control_id, "speak", apiKey, {
+            payload: "I'm sorry, I'm having technical difficulties. Please try again later.",
+            voice: VOICE,
+            language: "en-GB",
+            client_state: makeState("responding"),
+          });
+          break;
+        }
+
+        const dgRes = await fetch(
+          "https://api.deepgram.com/v1/listen?model=nova-2-phonecall&smart_format=true&language=en",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Token ${deepgramApiKey}`,
+              "Content-Type": "audio/wav",
+            },
+            body: audioBuffer,
+          }
+        );
+
+        if (!dgRes.ok) {
+          const errText = await dgRes.text();
+          console.error("[deepgram] STT failed:", dgRes.status, errText);
+          await providerAction(call_control_id, "speak", apiKey, {
+            payload: "I'm sorry, I had trouble hearing you. Could you please repeat?",
+            voice: VOICE,
+            language: "en-GB",
+            client_state: makeState("responding"),
+          });
+          break;
+        }
+
+        const dgData = await dgRes.json();
+        const transcript = (
+          dgData?.results?.channels?.[0]?.alternatives?.[0]?.transcript || ""
+        ).trim();
+
+        console.log("[deepgram] Transcript:", `"${transcript}"`);
+
         if (!transcript) {
-          console.log(`[gather-ended] No speech detected, asking to repeat`);
-          // Speak fallback, then gather will restart on speak.ended
           await providerAction(call_control_id, "speak", apiKey, {
             payload:
               (agent.fallback_message as string) ||
@@ -558,7 +595,7 @@ Deno.serve(async (req) => {
         const systemPrompt = buildSystemPrompt(agent, org, knowledgeItems);
         const aiResponse = await getAIResponse(messagesAfterUser, systemPrompt, llmConfig);
 
-        console.log(`[speak] AI response: "${aiResponse}"`);
+        console.log("[deepgram] AI response:", `"${aiResponse}"`);
 
         // Persist AI response
         await appendConversationMessage(supabase, callId, {
@@ -575,7 +612,6 @@ Deno.serve(async (req) => {
             lower.includes("i'll transfer"));
 
         if (shouldTransfer && agent.transfer_number) {
-          // Speak transfer message, then transfer on speak.ended
           await providerAction(call_control_id, "speak", apiKey, {
             payload: aiResponse,
             voice: VOICE,
@@ -583,7 +619,6 @@ Deno.serve(async (req) => {
             client_state: makeState("transferring"),
           });
         } else {
-          // Speak AI response, then gather will restart on speak.ended
           await providerAction(call_control_id, "speak", apiKey, {
             payload: aiResponse,
             voice: VOICE,
