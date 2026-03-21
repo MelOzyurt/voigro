@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Sparkles } from "lucide-react";
 import { useKnowledgeItems, useCreateKnowledgeItem, useUpdateKnowledgeItem, useDeleteKnowledgeItem, useBulkCreateKnowledgeItems } from "@/hooks/use-knowledge-items";
 import KnowledgeItemDialog, { type KnowledgeField } from "@/components/KnowledgeItemDialog";
 import BulkImportDialog from "@/components/BulkImportDialog";
+import AIMenuImporter from "@/components/AIMenuImporter";
 import ChildOptionsPanel from "@/components/ChildOptionsPanel";
 import { toast } from "sonner";
 
@@ -25,6 +26,7 @@ export default function Services() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
@@ -71,6 +73,9 @@ export default function Services() {
           <p className="text-sm text-muted-foreground">Manage the services your AI agent knows about.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setAiOpen(true)}>
+            <Sparkles className="mr-2 h-4 w-4" /> AI Import
+          </Button>
           <Button variant="outline" onClick={() => setBulkOpen(true)}>
             <Upload className="mr-2 h-4 w-4" /> Bulk Import
           </Button>
@@ -122,6 +127,13 @@ export default function Services() {
         itemLabel="Service"
         onImport={handleBulkImport}
         loading={bulkCreate.isPending}
+      />
+
+      <AIMenuImporter
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        type="service"
+        itemLabel="Service"
       />
     </div>
   );
