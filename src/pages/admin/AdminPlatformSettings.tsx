@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle, Brain, Pencil, X } from "lucide-react";
+import { Save, Upload, Trash2, Image, Eye, EyeOff, Loader2, CheckCircle, Brain, Pencil, X, Mic } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef, useEffect } from "react";
@@ -70,6 +70,12 @@ export default function AdminSettings() {
   const [testingLlm, setTestingLlm] = useState(false);
   const [llmEditing, setLlmEditing] = useState(false);
 
+  // STT (Deepgram) state
+  const [deepgramApiKey, setDeepgramApiKey] = useState("");
+  const [showDeepgramApiKey, setShowDeepgramApiKey] = useState(false);
+  const [sttEditing, setSttEditing] = useState(false);
+  const [testingStt, setTestingStt] = useState(false);
+
   const { data: settings, isLoading } = useQuery({
     queryKey: ["platform-settings"],
     queryFn: async () => {
@@ -106,6 +112,13 @@ export default function AdminSettings() {
     }
   }, [settings, llmEditing]);
 
+  useEffect(() => {
+    if (settings && !sttEditing) {
+      const s = settings as Record<string, unknown>;
+      setDeepgramApiKey((s.deepgram_api_key as string) ?? "");
+    }
+  }, [settings, sttEditing]);
+
   const resetVoiceFields = () => {
     if (!settings) return;
     const s = settings as Record<string, unknown>;
@@ -126,6 +139,13 @@ export default function AdminSettings() {
     setLlmModel((s.llm_model as string) ?? "google/gemini-2.5-flash");
     setLlmLanguage((s.llm_language as string) ?? "en");
     setLlmEditing(false);
+  };
+
+  const resetSttFields = () => {
+    if (!settings) return;
+    const s = settings as Record<string, unknown>;
+    setDeepgramApiKey((s.deepgram_api_key as string) ?? "");
+    setSttEditing(false);
   };
 
   // When LLM provider changes, set a sensible default model
@@ -215,6 +235,53 @@ export default function AdminSettings() {
       toast.error(message);
     } finally {
       setTestingConnection(false);
+    }
+  };
+
+  const saveSttMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        deepgram_api_key: deepgramApiKey || null,
+      } as Record<string, unknown>;
+
+      if (settings?.id) {
+        const { error } = await supabase
+          .from("platform_settings")
+          .update(payload as never)
+          .eq("id", settings.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("platform_settings")
+          .insert(payload as never);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-settings"] });
+      toast.success("STT settings saved.");
+      setSttEditing(false);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const handleTestStt = async () => {
+    setTestingStt(true);
+    try {
+      const res = await fetch("https://api.deepgram.com/v1/projects", {
+        headers: { Authorization: `Token ${deepgramApiKey}` },
+      });
+      if (res.ok) {
+        toast.success("Deepgram connection verified successfully.");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        toast.error((body as Record<string, string>)?.err_msg || `Deepgram returned ${res.status}`);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Deepgram test failed.";
+      toast.error(message);
+    } finally {
+      setTestingStt(false);
     }
   };
 
@@ -561,6 +628,87 @@ export default function AdminSettings() {
               </Button>
             )}
           </div>
+          </CardContent>
+        </Card>
+
+        {/* Speech-to-Text (Deepgram) */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <Mic className="h-4 w-4" /> Speech-to-Text (STT)
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {sttEditing && (
+                <Button variant="ghost" size="sm" onClick={resetSttFields}>
+                  <X className="mr-2 h-3.5 w-3.5" /> Cancel
+                </Button>
+              )}
+              {!sttEditing && settings && (
+                <Button variant="outline" size="sm" onClick={() => setSttEditing(true)}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <fieldset disabled={!sttEditing && !!settings} className="space-y-6">
+              <p className="text-sm text-muted-foreground">
+                Configure the Deepgram API key for high-accuracy speech recognition on 8kHz telephony audio (PCMA/G.711).
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Deepgram API Key</Label>
+                  <div className="relative mt-1.5">
+                    <Input
+                      type={showDeepgramApiKey ? "text" : "password"}
+                      placeholder="Enter Deepgram API key"
+                      value={deepgramApiKey}
+                      onChange={e => setDeepgramApiKey(e.target.value)}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-10 w-10"
+                      onClick={() => setShowDeepgramApiKey(!showDeepgramApiKey)}
+                    >
+                      {showDeepgramApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Used by the call handler to transcribe caller speech via Deepgram Nova-2 Phonecall model.
+                  </p>
+                </div>
+              </div>
+            </fieldset>
+            <div className="mt-4 flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestStt}
+                disabled={testingStt || !deepgramApiKey}
+              >
+                {testingStt ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testing…</>
+                ) : (
+                  <><CheckCircle className="mr-2 h-4 w-4" /> Test Connection</>
+                )}
+              </Button>
+              {sttEditing && (
+                <Button
+                  size="sm"
+                  onClick={() => saveSttMutation.mutate()}
+                  disabled={saveSttMutation.isPending}
+                >
+                  {saveSttMutation.isPending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
+                  ) : (
+                    <><Save className="mr-2 h-4 w-4" /> Save STT Settings</>
+                  )}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 

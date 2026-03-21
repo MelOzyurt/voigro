@@ -549,6 +549,7 @@ export type Database = {
       platform_settings: {
         Row: {
           created_at: string
+          deepgram_api_key: string | null
           default_voice_provider: string
           id: string
           llm_api_key: string | null
@@ -564,6 +565,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deepgram_api_key?: string | null
           default_voice_provider?: string
           id?: string
           llm_api_key?: string | null
@@ -579,6 +581,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deepgram_api_key?: string | null
           default_voice_provider?: string
           id?: string
           llm_api_key?: string | null
