@@ -15,7 +15,6 @@ import { usePhoneSetup } from "@/hooks/use-phone-setup";
 
 export default function SettingsPage() {
   const { data: org, isLoading: orgLoading } = useOrganization();
-  const { data: agent } = useAiAgent();
   const { phoneSetup } = usePhoneSetup();
   const orgId = useOrgId();
   const queryClient = useQueryClient();
