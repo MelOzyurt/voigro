@@ -418,6 +418,7 @@ Deno.serve(async (req) => {
     const platformConfig = await getPlatformConfig(supabase);
     const apiKey = platformConfig.providerApiKey;
     const llmConfig = platformConfig.llm;
+    const deepgramApiKey = platformConfig.deepgramApiKey;
 
     const makeState = (phase: string, extra: Record<string, unknown> = {}): string =>
       encodeState(phase, { orgId: organizationId, callId, ...extra });
