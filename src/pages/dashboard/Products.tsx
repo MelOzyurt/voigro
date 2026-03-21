@@ -1,9 +1,54 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { useKnowledgeItems } from "@/hooks/use-knowledge-items";
+import { useKnowledgeItems, useCreateKnowledgeItem, useUpdateKnowledgeItem, useDeleteKnowledgeItem } from "@/hooks/use-knowledge-items";
+import KnowledgeItemDialog, { type KnowledgeField } from "@/components/KnowledgeItemDialog";
+import { toast } from "sonner";
+
+const fields: KnowledgeField[] = [
+  { key: "name", label: "Product Name", placeholder: "e.g. Premium Shampoo" },
+  { key: "description", label: "Description", type: "textarea", placeholder: "Describe this product…" },
+];
+const metaFields: KnowledgeField[] = [
+  { key: "price", label: "Price", placeholder: "e.g. £12.99" },
+  { key: "stock", label: "Stock Status", placeholder: "e.g. In Stock, Low Stock" },
+];
 
 export default function Products() {
   const { data: products, isLoading } = useKnowledgeItems("product");
+  const create = useCreateKnowledgeItem("product");
+  const update = useUpdateKnowledgeItem("product");
+  const remove = useDeleteKnowledgeItem("product");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+
+  const openAdd = () => { setEditing(null); setDialogOpen(true); };
+  const openEdit = (item: any) => { setEditing(item); setDialogOpen(true); };
+
+  const handleSubmit = async (values: { name: string; description?: string; metadata: Record<string, any> }) => {
+    try {
+      if (editing) {
+        await update.mutateAsync({ id: editing.id, ...values });
+        toast.success("Product updated");
+      } else {
+        await create.mutateAsync(values);
+        toast.success("Product added");
+      }
+      setDialogOpen(false);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await remove.mutateAsync(id);
+      toast.success("Product removed");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -12,13 +57,13 @@ export default function Products() {
           <h1 className="font-display text-2xl font-bold text-foreground">Products</h1>
           <p className="text-sm text-muted-foreground">Manage products your AI agent can mention or sell.</p>
         </div>
-        <Button><Plus className="mr-2 h-4 w-4" /> Add Product</Button>
+        <Button onClick={openAdd}><Plus className="mr-2 h-4 w-4" /> Add Product</Button>
       </div>
 
       <div className="space-y-2">
         {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
         {!isLoading && (!products || products.length === 0) && (
-          <p className="text-sm text-muted-foreground py-8 text-center">No products added yet. Add products so your AI agent can mention or sell them.</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">No products added yet.</p>
         )}
         {products?.map(p => {
           const meta = p.metadata as Record<string, any>;
@@ -33,13 +78,24 @@ export default function Products() {
                 <span className={`text-xs ${meta.stock === "Low Stock" ? "text-destructive" : "text-muted-foreground"}`}>{meta.stock}</span>
               )}
               <div className="flex gap-1">
-                <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>
             </div>
           );
         })}
       </div>
+
+      <KnowledgeItemDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editing ? "Edit Product" : "Add Product"}
+        fields={fields}
+        metaFields={metaFields}
+        initial={editing ? { name: editing.name, description: editing.description, metadata: editing.metadata as Record<string, any> } : undefined}
+        onSubmit={handleSubmit}
+        loading={create.isPending || update.isPending}
+      />
     </div>
   );
 }

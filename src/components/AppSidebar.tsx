@@ -99,7 +99,58 @@ export function AppSidebar() {
       </div>
       <SidebarContent className="px-2">
         {renderGroup("Main", mainNav)}
-        {renderGroup("Knowledge Base", configNav)}
+
+        {/* Agent group with sub-items */}
+        <SidebarGroup>
+          {!collapsed ? (
+            <Collapsible defaultOpen={location.pathname.startsWith("/dashboard/agent") || location.pathname.startsWith("/dashboard/services") || location.pathname.startsWith("/dashboard/products") || location.pathname.startsWith("/dashboard/faqs")}>
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
+                <span className="flex items-center gap-3">
+                  <Bot className="h-4 w-4 shrink-0" />
+                  <span>Agent</span>
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 transition-transform [[data-state=open]>&]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenu className="ml-4 border-l border-sidebar-border pl-2 mt-1">
+                  {agentSubNav.map(item => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={item.url}
+                          end={item.url === "/dashboard/agent"}
+                          className="flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                          activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </CollapsibleContent>
+            </Collapsible>
+          ) : (
+            <SidebarMenu>
+              {agentSubNav.map(item => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end={item.url === "/dashboard/agent"}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          )}
+        </SidebarGroup>
+
         {renderGroup("Account", accountNav)}
       </SidebarContent>
       <SidebarFooter className="p-2 space-y-1">
