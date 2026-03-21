@@ -229,22 +229,32 @@ function generateBusinessHoursSummary(bh: Record<string, unknown>): string {
       monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday",
       thursday: "Thursday", friday: "Friday", saturday: "Saturday", sunday: "Sunday",
     };
-    const groups: { days: string[]; from: string; to: string }[] = [];
+
+    const formatHours = (s: Record<string, unknown>): string => {
+      if (s.is24h) return "24 hours";
+      const from = s.from as string;
+      const to = s.to as string;
+      if (s.overnight) return `${from}–${to} (next day)`;
+      return `${from}–${to}`;
+    };
+
+    const groups: { days: string[]; text: string }[] = [];
     const closed: string[] = [];
     for (const d of days) {
       const s = ws[d];
       if (!s || !s.open) { closed.push(dayLabels[d]); continue; }
+      const text = formatHours(s);
       const last = groups[groups.length - 1];
-      if (last && last.from === s.from && last.to === s.to) {
+      if (last && last.text === text) {
         last.days.push(dayLabels[d]);
       } else {
-        groups.push({ days: [dayLabels[d]], from: s.from as string, to: s.to as string });
+        groups.push({ days: [dayLabels[d]], text });
       }
     }
     const parts: string[] = [];
     for (const g of groups) {
       const range = g.days.length > 2 ? `${g.days[0]} to ${g.days[g.days.length - 1]}` : g.days.join(" and ");
-      parts.push(`Open ${range} ${g.from}–${g.to} (${bh.timezone || "UTC+0"}).`);
+      parts.push(`Open ${range} ${g.text} (${bh.timezone || "UTC+0"}).`);
     }
     if (closed.length > 0) parts.push(`Closed ${closed.join(" and ")}.`);
     const ph = bh.public_holidays as Record<string, unknown> | undefined;
