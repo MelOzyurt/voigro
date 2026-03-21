@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Sparkles } from "lucide-react";
 import { useKnowledgeItems, useCreateKnowledgeItem, useUpdateKnowledgeItem, useDeleteKnowledgeItem, useBulkCreateKnowledgeItems } from "@/hooks/use-knowledge-items";
 import KnowledgeItemDialog, { type KnowledgeField } from "@/components/KnowledgeItemDialog";
 import BulkImportDialog from "@/components/BulkImportDialog";
+import AIMenuImporter from "@/components/AIMenuImporter";
 import ChildOptionsPanel from "@/components/ChildOptionsPanel";
 import { toast } from "sonner";
 
