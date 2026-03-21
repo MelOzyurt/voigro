@@ -6,6 +6,7 @@ import KnowledgeItemDialog, { type KnowledgeField } from "@/components/Knowledge
 import BulkImportDialog from "@/components/BulkImportDialog";
 import AIMenuImporter from "@/components/AIMenuImporter";
 import ChildOptionsPanel from "@/components/ChildOptionsPanel";
+import UpdateAgentBar from "@/components/UpdateAgentBar";
 import { toast } from "sonner";
 
 const fields: KnowledgeField[] = [
