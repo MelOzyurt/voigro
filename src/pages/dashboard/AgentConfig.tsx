@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useAiAgent, useUpdateAiAgent, useCreateAiAgent } from "@/hooks/use-ai-agent";
 import { toast } from "sonner";
 import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
+import CallObjectives, { type ObjectivesData, DEFAULT_OBJECTIVES } from "@/components/CallObjectives";
 import type { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_BUSINESS_HOURS: BusinessHoursData = {
