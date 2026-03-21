@@ -76,14 +76,6 @@ export default function SettingsPage() {
         .update(orgUpdate as never)
         .eq("id", orgId);
 
-      if (businessHours && agent?.id) {
-        const { error: agentError } = await supabase
-          .from("ai_agents")
-          .update({ business_hours: JSON.parse(JSON.stringify(businessHours)) })
-          .eq("id", agent.id);
-        if (agentError) throw agentError;
-        queryClient.invalidateQueries({ queryKey: ["ai-agent"] });
-      }
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["organization"] });
       toast.success("Settings saved.");
