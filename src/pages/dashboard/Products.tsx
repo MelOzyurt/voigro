@@ -130,6 +130,13 @@ export default function Products() {
         onImport={handleBulkImport}
         loading={bulkCreate.isPending}
       />
+
+      <AIMenuImporter
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        type="product"
+        itemLabel="Product"
+      />
     </div>
   );
 }

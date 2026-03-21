@@ -128,6 +128,13 @@ export default function Services() {
         onImport={handleBulkImport}
         loading={bulkCreate.isPending}
       />
+
+      <AIMenuImporter
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        type="service"
+        itemLabel="Service"
+      />
     </div>
   );
 }
