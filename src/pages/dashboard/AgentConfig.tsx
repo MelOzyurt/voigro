@@ -101,7 +101,7 @@ export default function AgentConfig() {
   const [fallbackMessage, setFallbackMessage] = useState("");
   const [maxClarification, setMaxClarification] = useState("3");
   const [offerCallback, setOfferCallback] = useState(true);
-  const [enabledActions, setEnabledActions] = useState(DEFAULT_ENABLED_ACTIONS);
+  const [enabledActions, setEnabledActions] = useState<ObjectivesData>(DEFAULT_OBJECTIVES);
   const [escalationRules, setEscalationRules] = useState(DEFAULT_ESCALATION_RULES);
   const [transferNumber, setTransferNumber] = useState("");
   const [transferAnnouncement, setTransferAnnouncement] = useState("");
