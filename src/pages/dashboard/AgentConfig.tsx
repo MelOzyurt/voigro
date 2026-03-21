@@ -203,14 +203,7 @@ export default function AgentConfig() {
 
   if (isLoading) return <LoadingSkeleton />;
 
-  const actionsList = [
-    { key: "appointment_booking", label: "Appointment Booking", desc: "Let callers book appointments with available time slots" },
-    { key: "callback_requests", label: "Callback Requests", desc: "Collect caller details and schedule a callback from your team" },
-    { key: "lead_capture", label: "Lead Capture", desc: "Gather contact information and interest details from potential customers" },
-    { key: "order_intake", label: "Order Intake", desc: "Accept simple product or service orders over the phone" },
-    { key: "faq_answering", label: "FAQ Answering", desc: "Answer common questions using your configured FAQs and business info" },
-    { key: "message_taking", label: "Message Taking", desc: "Take messages when the business is closed or staff is unavailable" },
-  ];
+  // actionsList removed — replaced by CallObjectives component
 
   const escalationList = [
     { key: "negative_sentiment", label: "Escalate when negative sentiment is detected", desc: "Transfer angry or frustrated callers to a human" },
