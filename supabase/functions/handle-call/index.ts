@@ -230,7 +230,11 @@ function generateBusinessHoursSummary(bh: Record<string, unknown>): string {
   }
 }
 
-function buildSystemPrompt(agent: Record<string, unknown>, org: Record<string, unknown>): string {
+function buildSystemPrompt(
+  agent: Record<string, unknown>,
+  org: Record<string, unknown>,
+  knowledgeItems: Array<Record<string, unknown>> = []
+): string {
   const parts = [
     `You are ${agent.name || "an AI assistant"}, a phone assistant for ${org.name || "our business"}.`,
   ];
@@ -245,6 +249,36 @@ function buildSystemPrompt(agent: Record<string, unknown>, org: Record<string, u
   if (agent.special_instructions) {
     parts.push(`Special instructions: ${agent.special_instructions}`);
   }
+
+  // Knowledge Base: Services, Products, FAQs
+  const services = knowledgeItems.filter(i => i.type === "service");
+  const products = knowledgeItems.filter(i => i.type === "product");
+  const faqs = knowledgeItems.filter(i => i.type === "faq");
+
+  console.log(`[AI] Knowledge items: ${knowledgeItems.length}, services: ${services.length}, products: ${products.length}, faqs: ${faqs.length}`);
+
+  if (services.length > 0) {
+    parts.push("Our services:\n" + services.map(s =>
+      `- ${s.name}${s.description ? ': ' + s.description : ''}${
+        (s.metadata as Record<string, unknown>)?.price ? ' (Price: ' + (s.metadata as Record<string, unknown>).price + ')' : ''
+      }${(s.metadata as Record<string, unknown>)?.duration ? ' (Duration: ' + (s.metadata as Record<string, unknown>).duration + ')' : ''}`
+    ).join("\n"));
+  }
+
+  if (products.length > 0) {
+    parts.push("Our products:\n" + products.map(p =>
+      `- ${p.name}${p.description ? ': ' + p.description : ''}${
+        (p.metadata as Record<string, unknown>)?.price ? ' (Price: ' + (p.metadata as Record<string, unknown>).price + ')' : ''
+      }`
+    ).join("\n"));
+  }
+
+  if (faqs.length > 0) {
+    parts.push("Frequently asked questions:\n" + faqs.map(f =>
+      `Q: ${f.name}\nA: ${f.description || 'No answer provided.'}`
+    ).join("\n\n"));
+  }
+
   parts.push(
     "Respond conversationally and concisely (max 2-3 sentences).",
     "If you cannot help the caller, let them know you will transfer them to a team member.",
@@ -367,13 +401,15 @@ Deno.serve(async (req) => {
 
     console.log(`[Event] Organization: ${organizationId}, callId: ${callId}`);
 
-    const [orgResult, agentResult] = await Promise.all([
+    const [orgResult, agentResult, knowledgeResult] = await Promise.all([
       supabase.from("organizations").select("*").eq("id", organizationId).single(),
       supabase.from("ai_agents").select("*").eq("organization_id", organizationId).eq("is_active", true).limit(1).maybeSingle(),
+      supabase.from("knowledge_items").select("*").eq("organization_id", organizationId).eq("is_active", true).order("sort_order", { ascending: true }),
     ]);
 
     const org = (orgResult.data || {}) as Record<string, unknown>;
     const agent = (agentResult.data || {}) as Record<string, unknown>;
+    const knowledgeItems = (knowledgeResult.data || []) as Array<Record<string, unknown>>;
 
     console.log(`[Event] Agent: name=${agent.name}, greeting=${agent.greeting}, org=${org.name}`);
 
@@ -519,7 +555,7 @@ Deno.serve(async (req) => {
           content: transcript,
         });
 
-        const systemPrompt = buildSystemPrompt(agent, org);
+        const systemPrompt = buildSystemPrompt(agent, org, knowledgeItems);
         const aiResponse = await getAIResponse(messagesAfterUser, systemPrompt, llmConfig);
 
         console.log(`[speak] AI response: "${aiResponse}"`);
