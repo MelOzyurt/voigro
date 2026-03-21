@@ -246,7 +246,7 @@ export default function AgentConfig() {
           <TabsTrigger value="identity">Identity</TabsTrigger>
           <TabsTrigger value="context">Business Context</TabsTrigger>
           <TabsTrigger value="behavior">Tone & Style</TabsTrigger>
-          <TabsTrigger value="actions">Actions</TabsTrigger>
+          <TabsTrigger value="actions">Call Objectives</TabsTrigger>
           <TabsTrigger value="escalation">Escalation</TabsTrigger>
           <TabsTrigger value="outcomes">Call Outcomes</TabsTrigger>
         </TabsList>
