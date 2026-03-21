@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useAiAgent, useUpdateAiAgent, useCreateAiAgent } from "@/hooks/use-ai-agent";
 import { toast } from "sonner";
 import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
+import CallObjectives, { type ObjectivesData, DEFAULT_OBJECTIVES } from "@/components/CallObjectives";
 import type { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_BUSINESS_HOURS: BusinessHoursData = {
@@ -30,14 +31,7 @@ const DEFAULT_BUSINESS_HOURS: BusinessHoursData = {
   custom_openings: [],
 };
 
-const DEFAULT_ENABLED_ACTIONS = {
-  appointment_booking: true,
-  callback_requests: true,
-  lead_capture: true,
-  order_intake: false,
-  faq_answering: true,
-  message_taking: true,
-};
+// Removed old DEFAULT_ENABLED_ACTIONS — now using ObjectivesData
 
 const DEFAULT_ESCALATION_RULES = {
   negative_sentiment: true,
@@ -107,7 +101,7 @@ export default function AgentConfig() {
   const [fallbackMessage, setFallbackMessage] = useState("");
   const [maxClarification, setMaxClarification] = useState("3");
   const [offerCallback, setOfferCallback] = useState(true);
-  const [enabledActions, setEnabledActions] = useState(DEFAULT_ENABLED_ACTIONS);
+  const [enabledActions, setEnabledActions] = useState<ObjectivesData>(DEFAULT_OBJECTIVES);
   const [escalationRules, setEscalationRules] = useState(DEFAULT_ESCALATION_RULES);
   const [transferNumber, setTransferNumber] = useState("");
   const [transferAnnouncement, setTransferAnnouncement] = useState("");
@@ -144,7 +138,7 @@ export default function AgentConfig() {
       setBusinessHours(agent.business_hours as unknown as BusinessHoursData);
     }
     if (agent.enabled_actions && typeof agent.enabled_actions === "object") {
-      setEnabledActions({ ...DEFAULT_ENABLED_ACTIONS, ...(agent.enabled_actions as any) });
+      setEnabledActions({ ...DEFAULT_OBJECTIVES, ...(agent.enabled_actions as any) });
     }
     if (agent.escalation_rules && typeof agent.escalation_rules === "object") {
       setEscalationRules({ ...DEFAULT_ESCALATION_RULES, ...(agent.escalation_rules as any) });
@@ -209,14 +203,7 @@ export default function AgentConfig() {
 
   if (isLoading) return <LoadingSkeleton />;
 
-  const actionsList = [
-    { key: "appointment_booking", label: "Appointment Booking", desc: "Let callers book appointments with available time slots" },
-    { key: "callback_requests", label: "Callback Requests", desc: "Collect caller details and schedule a callback from your team" },
-    { key: "lead_capture", label: "Lead Capture", desc: "Gather contact information and interest details from potential customers" },
-    { key: "order_intake", label: "Order Intake", desc: "Accept simple product or service orders over the phone" },
-    { key: "faq_answering", label: "FAQ Answering", desc: "Answer common questions using your configured FAQs and business info" },
-    { key: "message_taking", label: "Message Taking", desc: "Take messages when the business is closed or staff is unavailable" },
-  ];
+  // actionsList removed — replaced by CallObjectives component
 
   const escalationList = [
     { key: "negative_sentiment", label: "Escalate when negative sentiment is detected", desc: "Transfer angry or frustrated callers to a human" },
@@ -252,7 +239,7 @@ export default function AgentConfig() {
           <TabsTrigger value="identity">Identity</TabsTrigger>
           <TabsTrigger value="context">Business Context</TabsTrigger>
           <TabsTrigger value="behavior">Tone & Style</TabsTrigger>
-          <TabsTrigger value="actions">Actions</TabsTrigger>
+          <TabsTrigger value="actions">Call Objectives</TabsTrigger>
           <TabsTrigger value="escalation">Escalation</TabsTrigger>
           <TabsTrigger value="outcomes">Call Outcomes</TabsTrigger>
         </TabsList>
@@ -405,25 +392,11 @@ export default function AgentConfig() {
         {/* Actions */}
         <TabsContent value="actions" className="space-y-6">
           <TabEditControls editing={isEditing("actions")} onEdit={() => setTabEditing("actions", true)} onSave={() => handleTabSave("actions")} />
-          <Card>
-            <CardHeader><CardTitle className="font-display text-base">Supported Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">Choose what your AI agent can do during calls.</p>
-              {actionsList.map((action) => (
-                <div key={action.key} className="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{action.label}</p>
-                    <p className="text-xs text-muted-foreground">{action.desc}</p>
-                  </div>
-                  <Switch
-                    checked={enabledActions[action.key as keyof typeof enabledActions]}
-                    onCheckedChange={(v) => setEnabledActions(prev => ({ ...prev, [action.key]: v }))}
-                    disabled={!isEditing("actions")}
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <CallObjectives
+            value={enabledActions}
+            onChange={setEnabledActions}
+            disabled={!isEditing("actions")}
+          />
         </TabsContent>
 
         {/* Escalation */}
