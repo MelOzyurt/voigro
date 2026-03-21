@@ -57,6 +57,7 @@ function decodeState(clientState: string | undefined): CallState {
 async function getPlatformConfig(supabase: ReturnType<typeof createClient>): Promise<{
   providerApiKey: string;
   llm: LlmConfig;
+  deepgramApiKey: string;
 }> {
   const { data } = await supabase
     .from("platform_settings")
@@ -72,6 +73,7 @@ async function getPlatformConfig(supabase: ReturnType<typeof createClient>): Pro
       model: (s.llm_model as string) || "google/gemini-2.5-flash",
       language: (s.llm_language as string) || "en",
     },
+    deepgramApiKey: (s.deepgram_api_key as string) || "",
   };
 }
 
