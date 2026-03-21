@@ -494,11 +494,11 @@ Deno.serve(async (req) => {
           await providerAction(call_control_id, "gather", apiKey, {
             gather_method: "speech",
             input: ["speech"],
-            language: "en-GB",
-            speech_model: "enhanced",
+            language: "en-US",
+            speech_model: "default",
             speech_timeout: "auto",
-            timeout: 20,
-            minimum_silence_duration: 800,
+            timeout: 25,
+            minimum_silence_duration: 500,
             client_state: makeState(phase, { gatherActive: true }),
           });
         } else {
