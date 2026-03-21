@@ -11,13 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization, useOrgId } from "@/hooks/use-organization";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useAiAgent } from "@/hooks/use-ai-agent";
 import { usePhoneSetup } from "@/hooks/use-phone-setup";
-import BusinessHours, { type BusinessHoursData } from "@/components/BusinessHours";
 
 export default function SettingsPage() {
   const { data: org, isLoading: orgLoading } = useOrganization();
-  const { data: agent } = useAiAgent();
   const { phoneSetup } = usePhoneSetup();
   const orgId = useOrgId();
   const queryClient = useQueryClient();
@@ -25,7 +22,7 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [businessHours, setBusinessHours] = useState<BusinessHoursData | null>(null);
+  
 
   const [form, setForm] = useState({
     name: "",
@@ -79,14 +76,6 @@ export default function SettingsPage() {
         .update(orgUpdate as never)
         .eq("id", orgId);
 
-      if (businessHours && agent?.id) {
-        const { error: agentError } = await supabase
-          .from("ai_agents")
-          .update({ business_hours: JSON.parse(JSON.stringify(businessHours)) })
-          .eq("id", agent.id);
-        if (agentError) throw agentError;
-        queryClient.invalidateQueries({ queryKey: ["ai-agent"] });
-      }
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["organization"] });
       toast.success("Settings saved.");
@@ -276,29 +265,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="font-display text-base">Business Hours</CardTitle></CardHeader>
-            <CardContent>
-              <BusinessHours
-                value={businessHours ?? (agent?.business_hours as unknown as BusinessHoursData) ?? {
-                  timezone: "UTC+0",
-                  weekly_schedule: {
-                    monday: { open: true, from: "09:00", to: "17:00" },
-                    tuesday: { open: true, from: "09:00", to: "17:00" },
-                    wednesday: { open: true, from: "09:00", to: "17:00" },
-                    thursday: { open: true, from: "09:00", to: "17:00" },
-                    friday: { open: true, from: "09:00", to: "17:00" },
-                    saturday: { open: false, from: "09:00", to: "13:00" },
-                    sunday: { open: false, from: "09:00", to: "13:00" },
-                  },
-                  public_holidays: { enabled: true, country: "GB", closed_on_holidays: true },
-                  custom_closures: [],
-                  custom_openings: [],
-                }}
-                onChange={setBusinessHours}
-              />
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="branding" className="space-y-6">
