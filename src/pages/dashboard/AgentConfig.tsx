@@ -399,25 +399,11 @@ export default function AgentConfig() {
         {/* Actions */}
         <TabsContent value="actions" className="space-y-6">
           <TabEditControls editing={isEditing("actions")} onEdit={() => setTabEditing("actions", true)} onSave={() => handleTabSave("actions")} />
-          <Card>
-            <CardHeader><CardTitle className="font-display text-base">Supported Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">Choose what your AI agent can do during calls.</p>
-              {actionsList.map((action) => (
-                <div key={action.key} className="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{action.label}</p>
-                    <p className="text-xs text-muted-foreground">{action.desc}</p>
-                  </div>
-                  <Switch
-                    checked={enabledActions[action.key as keyof typeof enabledActions]}
-                    onCheckedChange={(v) => setEnabledActions(prev => ({ ...prev, [action.key]: v }))}
-                    disabled={!isEditing("actions")}
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <CallObjectives
+            value={enabledActions}
+            onChange={setEnabledActions}
+            disabled={!isEditing("actions")}
+          />
         </TabsContent>
 
         {/* Escalation */}
