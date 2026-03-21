@@ -9,13 +9,42 @@ export interface KnowledgeItemInput {
   description?: string;
   metadata?: Record<string, any>;
   sort_order?: number;
+  parent_id?: string | null;
 }
 
-export function useKnowledgeItems(type: KnowledgeItemType) {
+export function useKnowledgeItems(type: KnowledgeItemType, parentId?: string | null) {
   const orgId = useOrgId();
 
   return useQuery({
-    queryKey: ["knowledge-items", orgId, type],
+    queryKey: ["knowledge-items", orgId, type, parentId ?? "root"],
+    queryFn: async () => {
+      let query = supabase
+        .from("knowledge_items")
+        .select("*")
+        .eq("organization_id", orgId!)
+        .eq("type", type)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+
+      if (parentId) {
+        query = query.eq("parent_id", parentId);
+      } else {
+        query = query.is("parent_id", null);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!orgId,
+  });
+}
+
+export function useAllKnowledgeItems(type: KnowledgeItemType) {
+  const orgId = useOrgId();
+
+  return useQuery({
+    queryKey: ["knowledge-items-all", orgId, type],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("knowledge_items")
@@ -46,13 +75,40 @@ export function useCreateKnowledgeItem(type: KnowledgeItemType) {
           description: input.description ?? null,
           metadata: (input.metadata ?? {}) as any,
           sort_order: input.sort_order ?? 0,
+          parent_id: input.parent_id ?? null,
         })
         .select()
         .single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-items", orgId, type] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-items"] }),
+  });
+}
+
+export function useBulkCreateKnowledgeItems(type: KnowledgeItemType) {
+  const orgId = useOrgId();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (items: KnowledgeItemInput[]) => {
+      const rows = items.map((input, i) => ({
+        organization_id: orgId!,
+        type,
+        name: input.name,
+        description: input.description ?? null,
+        metadata: (input.metadata ?? {}) as any,
+        sort_order: input.sort_order ?? i,
+        parent_id: input.parent_id ?? null,
+      }));
+      const { data, error } = await supabase
+        .from("knowledge_items")
+        .insert(rows)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-items"] }),
   });
 }
 
@@ -76,7 +132,7 @@ export function useUpdateKnowledgeItem(type: KnowledgeItemType) {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-items", orgId, type] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-items"] }),
   });
 }
 
@@ -92,6 +148,6 @@ export function useDeleteKnowledgeItem(type: KnowledgeItemType) {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-items", orgId, type] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-items"] }),
   });
 }
