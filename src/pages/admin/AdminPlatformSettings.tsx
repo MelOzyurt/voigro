@@ -268,14 +268,12 @@ export default function AdminSettings() {
   const handleTestStt = async () => {
     setTestingStt(true);
     try {
-      const res = await fetch("https://api.deepgram.com/v1/projects", {
-        headers: { Authorization: `Token ${deepgramApiKey}` },
-      });
-      if (res.ok) {
-        toast.success("Deepgram connection verified successfully.");
+      const { data, error } = await supabase.functions.invoke("test-deepgram-connection");
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(data.message || "Deepgram connection verified successfully.");
       } else {
-        const body = await res.json().catch(() => ({}));
-        toast.error((body as Record<string, string>)?.err_msg || `Deepgram returned ${res.status}`);
+        toast.error(data?.error || "Deepgram connection test failed.");
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Deepgram test failed.";
