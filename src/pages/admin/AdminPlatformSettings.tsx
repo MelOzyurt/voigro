@@ -285,6 +285,7 @@ export default function AdminSettings() {
     }
   };
 
+  const handleTestLlm = async () => {
     setTestingLlm(true);
     try {
       const { data, error } = await supabase.functions.invoke("test-llm-connection");
