@@ -43,6 +43,7 @@ export function AppSidebar() {
   const { data: org } = useOrganization();
   const { data: profile } = useCurrentUser();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const orgName = org?.name ?? "My Business";
   const orgLogo = org?.logo_url ?? null;
