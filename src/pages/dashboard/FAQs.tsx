@@ -87,6 +87,8 @@ export default function FAQs() {
         onSubmit={handleSubmit}
         loading={create.isPending || update.isPending}
       />
+
+      <UpdateAgentBar type="faq" />
     </div>
   );
 }

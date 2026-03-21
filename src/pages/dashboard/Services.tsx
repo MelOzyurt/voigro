@@ -136,6 +136,8 @@ export default function Services() {
         type="service"
         itemLabel="Service"
       />
+
+      <UpdateAgentBar type="service" />
     </div>
   );
 }

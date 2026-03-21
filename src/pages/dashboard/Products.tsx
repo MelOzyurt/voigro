@@ -138,6 +138,8 @@ export default function Products() {
         type="product"
         itemLabel="Product"
       />
+
+      <UpdateAgentBar type="product" />
     </div>
   );
 }
