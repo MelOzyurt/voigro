@@ -70,6 +70,12 @@ export default function AdminSettings() {
   const [testingLlm, setTestingLlm] = useState(false);
   const [llmEditing, setLlmEditing] = useState(false);
 
+  // STT (Deepgram) state
+  const [deepgramApiKey, setDeepgramApiKey] = useState("");
+  const [showDeepgramApiKey, setShowDeepgramApiKey] = useState(false);
+  const [sttEditing, setSttEditing] = useState(false);
+  const [testingStt, setTestingStt] = useState(false);
+
   const { data: settings, isLoading } = useQuery({
     queryKey: ["platform-settings"],
     queryFn: async () => {
