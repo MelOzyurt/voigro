@@ -50,43 +50,24 @@ export default function Onboarding() {
     if (orgId) return true;
     setCreating(true);
     try {
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .insert({
+      const { data: result, error } = await supabase.functions.invoke("create-organization", {
+        body: {
           name: data.businessName || "My Business",
           industry: data.industry || null,
           location: data.location || null,
           website: data.website || null,
-        })
-        .select("id")
-        .single();
-      if (orgError) throw orgError;
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ organization_id: org.id })
-          .eq("id", user.id);
-        if (profileError) throw profileError;
-      }
-
-      // Update module selections
-      const allModuleKeys: ModuleKey[] = ["voice_agent", "booking", "calendar", "public_booking_page", "crm", "marketing"];
-      for (const key of allModuleKeys) {
-        await supabase
-          .from("organization_modules")
-          .update({ enabled: data.selectedModules.includes(key) })
-          .eq("organization_id", org.id)
-          .eq("module_key", key);
-      }
+          modules: data.selectedModules,
+        },
+      });
+      if (error) throw error;
+      if (result?.error) throw new Error(result.error);
 
       await queryClient.invalidateQueries({ queryKey: ["current-user"] });
       await queryClient.invalidateQueries({ queryKey: ["organization-modules"] });
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to create organization:", err);
-      toast.error("Failed to create your business profile. Please try again.");
+      toast.error(err?.message || "Failed to create your business profile. Please try again.");
       return false;
     } finally {
       setCreating(false);
