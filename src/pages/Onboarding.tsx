@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Phone, ArrowRight, ArrowLeft, Loader2, Rocket } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, Rocket } from "lucide-react";
+import voigroLogo from "@/assets/voigro-logo.png";
 import { useOrgId } from "@/hooks/use-organization";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -96,10 +97,8 @@ export default function Onboarding() {
       <div className="w-full max-w-lg">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Phone className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">Callio</span>
+            <img src={voigroLogo} alt="Voigro" className="h-8 w-8" />
+            <span className="font-display text-xl font-bold text-foreground">Voigro</span>
           </div>
           <h1 className="mt-6 font-display text-2xl font-bold text-foreground">
             {currentStep.id === "launch" ? "You're all set!" : "Set up your business"}

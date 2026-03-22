@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import {
-  Phone, Bot, BarChart3, Clock, Users, ArrowRight,
+  Bot, BarChart3, Clock, Users, ArrowRight,
   Zap, Shield, Headphones,
-  Utensils, Wrench, Stethoscope, Scissors, ShoppingBag, Building2
+  Utensils, Wrench, Stethoscope, Scissors, ShoppingBag, Building2, Phone
 } from "lucide-react";
 import { motion } from "framer-motion";
+import voigroLogo from "@/assets/voigro-logo.png";
 import ProductTiers from "@/components/landing/ProductTiers";
 
 const fadeUp = {
@@ -29,7 +30,7 @@ const useCases = [
 const steps = [
   { num: "01", title: "Sign Up & Configure", desc: "Create your account, add your business details, services, and FAQs." },
   { num: "02", title: "Customize Your Agent", desc: "Set your agent's tone, greeting, and the actions it can perform." },
-  { num: "03", title: "Go Live", desc: "Forward your business line to Callio. Calls are answered instantly, 24/7." },
+  { num: "03", title: "Go Live", desc: "Forward your business line to Voigro. Calls are answered instantly, 24/7." },
 ];
 
 const plans = [
@@ -45,10 +46,8 @@ export default function Landing() {
       <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Phone className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">Callio</span>
+            <img src={voigroLogo} alt="Voigro" className="h-8 w-8" />
+            <span className="font-display text-xl font-bold text-foreground">Voigro</span>
           </Link>
           <div className="hidden items-center gap-8 md:flex">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -70,13 +69,13 @@ export default function Landing() {
       <motion.section initial="hidden" animate="visible" variants={stagger} className="container py-24 lg:py-32">
         <div className="mx-auto max-w-3xl text-center">
           <motion.div variants={fadeUp} className="mb-4 inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm text-muted-foreground">
-            <Zap className="h-3.5 w-3.5 text-primary" /> AI-Powered Phone Agents for Business
+            <Zap className="h-3.5 w-3.5 text-primary" /> AI-Powered Voice Agents for Business
           </motion.div>
           <motion.h1 variants={fadeUp} className="font-display text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Never Miss a Call.<br />Never Lose a Customer.
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-6 text-lg text-muted-foreground leading-relaxed">
-            Callio answers your business calls 24/7 with an AI agent that books appointments, captures leads, and handles orders — so you can focus on what you do best.
+            Voigro answers your business calls 24/7 with an AI agent that books appointments, captures leads, and handles orders — so you can focus on what you do best.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button variant="hero" size="xl" asChild>
@@ -108,7 +107,7 @@ export default function Landing() {
             ].map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "Caller" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[75%] rounded-xl px-4 py-2.5 text-sm ${msg.role === "Caller" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                  <span className="mb-0.5 block text-[10px] font-semibold opacity-70">{msg.role === "AI" ? "Callio Agent" : "Caller"}</span>
+                  <span className="mb-0.5 block text-[10px] font-semibold opacity-70">{msg.role === "AI" ? "Voigro Agent" : "Caller"}</span>
                   {msg.text}
                 </div>
               </div>
@@ -169,7 +168,7 @@ export default function Landing() {
         <div className="container">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="font-display text-3xl font-bold text-foreground">Built for Every Business</h2>
-            <p className="mt-3 text-muted-foreground">From restaurants to clinics, Callio adapts to your industry.</p>
+            <p className="mt-3 text-muted-foreground">From restaurants to clinics, Voigro adapts to your industry.</p>
           </div>
           <div className="mx-auto mt-16 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {useCases.map((uc, i) => (
@@ -194,7 +193,7 @@ export default function Landing() {
       <section className="border-t bg-navy py-24">
         <div className="container text-center">
           <h2 className="font-display text-3xl font-bold text-navy-foreground">Ready to Transform Your Phone Line?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/70">Join hundreds of businesses using Callio to handle calls, capture leads, and book appointments automatically.</p>
+          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/70">Join hundreds of businesses using Voigro to handle calls, capture leads, and book appointments automatically.</p>
           <div className="mt-10 flex justify-center gap-4">
             <Button variant="hero" size="xl" asChild>
               <Link to="/signup">Start Free Trial <ArrowRight className="ml-1 h-5 w-5" /></Link>
@@ -207,12 +206,10 @@ export default function Landing() {
       <footer className="border-t py-12">
         <div className="container flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-              <Phone className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-lg font-bold text-foreground">Callio</span>
+            <img src={voigroLogo} alt="Voigro" className="h-7 w-7" />
+            <span className="font-display text-lg font-bold text-foreground">Voigro</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 Callio. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2026 Voigro. All rights reserved.</p>
         </div>
       </footer>
     </div>

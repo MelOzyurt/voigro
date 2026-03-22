@@ -97,7 +97,7 @@ export default function AdminLogin() {
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              placeholder="admin@callio.com"
+              placeholder="admin@voigro.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="mt-1.5"

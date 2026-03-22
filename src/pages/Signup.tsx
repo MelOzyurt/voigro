@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { Phone, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import voigroLogo from "@/assets/voigro-logo.png";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -53,10 +54,8 @@ export default function Signup() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Phone className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">Callio</span>
+            <img src={voigroLogo} alt="Voigro" className="h-8 w-8" />
+            <span className="font-display text-xl font-bold text-foreground">Voigro</span>
           </Link>
           <h1 className="mt-6 font-display text-2xl font-bold text-foreground">Create your account</h1>
           <p className="mt-2 text-sm text-muted-foreground">Get started with your AI phone agent</p>

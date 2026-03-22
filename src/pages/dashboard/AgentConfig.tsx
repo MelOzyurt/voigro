@@ -474,7 +474,7 @@ export default function AgentConfig() {
               </div>
               <div>
                 <Label>Webhook URL (optional)</Label>
-                <Input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://your-crm.com/webhooks/callio" className="mt-1.5" disabled={!isEditing("outcomes")} />
+                <Input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://your-crm.com/webhooks/voigro" className="mt-1.5" disabled={!isEditing("outcomes")} />
                 <p className="mt-1 text-xs text-muted-foreground">Receive call outcome data via webhook for CRM or automation integration.</p>
               </div>
             </CardContent>
