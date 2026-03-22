@@ -119,7 +119,7 @@ async function getAIResponse(
       headers["anthropic-version"] = "2023-06-01";
       body = {
         model: llm.model || "claude-sonnet-4-20250514",
-        max_tokens: 300,
+        max_tokens: 150,
         system: systemPrompt,
         messages: messages.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
       };
@@ -568,6 +568,7 @@ Deno.serve(async (req) => {
             channels: "single",
             play_beep: false,
             timeout_secs: 15,
+            maximum_length: 15,
             trim_silence: false,
             minimum_silence_duration: 800,
             client_state: makeState(phase, { recordingActive: true }),
@@ -613,7 +614,7 @@ Deno.serve(async (req) => {
         }
 
         const dgRes = await fetch(
-          "https://api.deepgram.com/v1/listen?model=nova-2-phonecall&smart_format=true&language=en",
+          "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=false&language=en",
           {
             method: "POST",
             headers: {
