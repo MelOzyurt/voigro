@@ -425,6 +425,47 @@ export type Database = {
           },
         ]
       }
+      organization_modules: {
+        Row: {
+          activated_at: string | null
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          module_key: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          module_key: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          module_key?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_modules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
