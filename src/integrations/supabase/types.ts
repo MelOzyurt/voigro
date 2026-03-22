@@ -104,6 +104,7 @@ export type Database = {
           transfer_number: string | null
           updated_at: string
           version: number
+          voice_delivery_instructions: string | null
           webhook_url: string | null
         }
         Insert: {
@@ -132,6 +133,7 @@ export type Database = {
           transfer_number?: string | null
           updated_at?: string
           version?: number
+          voice_delivery_instructions?: string | null
           webhook_url?: string | null
         }
         Update: {
@@ -160,6 +162,7 @@ export type Database = {
           transfer_number?: string | null
           updated_at?: string
           version?: number
+          voice_delivery_instructions?: string | null
           webhook_url?: string | null
         }
         Relationships: [
