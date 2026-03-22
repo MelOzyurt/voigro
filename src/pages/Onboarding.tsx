@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { ArrowRight, ArrowLeft, Loader2, Rocket } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, Rocket, ShieldCheck } from "lucide-react";
 import voigroLogo from "@/assets/voigro-logo.png";
 import { useOrgId } from "@/hooks/use-organization";
 import { supabase } from "@/integrations/supabase/client";
