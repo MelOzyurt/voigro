@@ -17,7 +17,6 @@ const modules: ModuleOption[] = [
     label: "AI Voice Assistant",
     desc: "Automated call handling, transcripts, and actions",
     icon: Phone,
-    core: true,
   },
   {
     key: "booking",
