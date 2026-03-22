@@ -98,6 +98,7 @@ export default function AgentConfig() {
   const [tone, setTone] = useState("friendly");
   const [responseStyle, setResponseStyle] = useState("concise");
   const [language, setLanguage] = useState("en");
+  const [voiceDeliveryInstructions, setVoiceDeliveryInstructions] = useState("Speak in a warm, friendly, and welcoming tone, like a polite restaurant staff member answering the phone. Smile slightly while speaking, with a natural rhythm and short pauses. Keep the delivery relaxed and conversational, not robotic. Emphasize the business name clearly. Slight pause after greeting.");
   const [fallbackMessage, setFallbackMessage] = useState("");
   const [maxClarification, setMaxClarification] = useState("3");
   const [offerCallback, setOfferCallback] = useState(true);
@@ -126,6 +127,7 @@ export default function AgentConfig() {
     setTone(agent.tone || "friendly");
     setResponseStyle(agent.response_style || "concise");
     setLanguage(agent.language || "en");
+    setVoiceDeliveryInstructions((agent as any).voice_delivery_instructions || "Speak in a warm, friendly, and welcoming tone, like a polite restaurant staff member answering the phone. Smile slightly while speaking, with a natural rhythm and short pauses. Keep the delivery relaxed and conversational, not robotic. Emphasize the business name clearly. Slight pause after greeting.");
     setFallbackMessage(agent.fallback_message || "");
     setMaxClarification(String(agent.max_clarification_attempts || 3));
     setOfferCallback(agent.offer_callback_on_fallback ?? true);
@@ -167,6 +169,7 @@ export default function AgentConfig() {
     tone,
     response_style: responseStyle,
     language,
+    voice_delivery_instructions: voiceDeliveryInstructions,
     fallback_message: fallbackMessage,
     max_clarification_attempts: parseInt(maxClarification),
     offer_callback_on_fallback: offerCallback,
@@ -355,6 +358,20 @@ export default function AgentConfig() {
                     <SelectItem value="fr">French</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Voice Delivery Style</Label>
+                <Textarea
+                  value={voiceDeliveryInstructions}
+                  onChange={e => setVoiceDeliveryInstructions(e.target.value)}
+                  className="mt-1.5"
+                  rows={4}
+                  disabled={!isEditing("behavior")}
+                  placeholder="Describe how the AI should deliver its responses..."
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Instructions for how the AI should speak — tone, rhythm, pauses, and overall delivery feel.
+                </p>
               </div>
             </CardContent>
           </Card>
