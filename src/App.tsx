@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import Onboarding from "./pages/Onboarding";
 
 import DashboardLayout from "./components/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/Overview";
