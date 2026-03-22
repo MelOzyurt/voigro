@@ -136,12 +136,12 @@ export default function Landing() {
           </div>
           <div className="mx-auto mt-16 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: Bot, title: "AI-Powered Answers", desc: "Your agent learns your business and answers questions accurately." },
-              { icon: Clock, title: "24/7 Availability", desc: "Never miss a call, even after hours or on holidays." },
-              { icon: Users, title: "Lead Capture", desc: "Collect caller details and route them to your CRM." },
-              { icon: BarChart3, title: "Call Analytics", desc: "Track every call, see trends, and optimize performance." },
-              { icon: Shield, title: "Enterprise Security", desc: "SOC 2 compliant with encrypted call data." },
-              { icon: Headphones, title: "Smart Escalation", desc: "Seamlessly transfer complex calls to your team." },
+              { icon: Bot, title: "Your AI knows your business cold", desc: "Trained on your services, prices and FAQs — answers questions better than a junior staff member." },
+              { icon: Clock, title: "Open at 2am. Closed never.", desc: "Bank holidays, weekends, after hours — every call gets answered, every lead captured." },
+              { icon: Users, title: "Turn callers into customers automatically", desc: "Collects name, number and intent — straight into your inbox or CRM." },
+              { icon: BarChart3, title: "See exactly what callers want", desc: "Every call transcribed and summarised — spot trends, fix gaps, improve your service." },
+              { icon: Shield, title: "Your calls stay private", desc: "End-to-end encrypted and GDPR compliant. Customer data never leaves our secure infrastructure." },
+              { icon: Headphones, title: "Complex calls go to the right human", desc: "When a caller needs a real person, Voigro transfers them instantly — with full context." },
             ].map((f, i) => (
               <div key={i} className="group rounded-xl border bg-background p-6 transition-all duration-150 hover:shadow-md">
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
