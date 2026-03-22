@@ -75,12 +75,23 @@ export default function Landing() {
             Never Miss a Call.<br />Never Lose a Customer.
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-6 text-lg text-muted-foreground leading-relaxed">
-            Voigro answers your business calls 24/7 with an AI agent that books appointments, captures leads, and handles orders — so you can focus on what you do best.
+            Every missed call is a lost customer. Voigro answers instantly — booking appointments, capturing leads, and handling enquiries 24/7, even while you sleep.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button variant="hero" size="xl" asChild>
               <Link to="/signup">Start Free Trial <ArrowRight className="ml-1 h-5 w-5" /></Link>
             </Button>
+          </motion.div>
+          <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              <Zap className="h-3 w-3 text-primary" /> Live in under 5 minutes
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3 text-primary" /> Answers calls 24/7
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              <Users className="h-3 w-3 text-primary" /> Avg. 40+ recovered calls/month
+            </span>
           </motion.div>
         </div>
 
@@ -125,12 +136,12 @@ export default function Landing() {
           </div>
           <div className="mx-auto mt-16 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: Bot, title: "AI-Powered Answers", desc: "Your agent learns your business and answers questions accurately." },
-              { icon: Clock, title: "24/7 Availability", desc: "Never miss a call, even after hours or on holidays." },
-              { icon: Users, title: "Lead Capture", desc: "Collect caller details and route them to your CRM." },
-              { icon: BarChart3, title: "Call Analytics", desc: "Track every call, see trends, and optimize performance." },
-              { icon: Shield, title: "Enterprise Security", desc: "SOC 2 compliant with encrypted call data." },
-              { icon: Headphones, title: "Smart Escalation", desc: "Seamlessly transfer complex calls to your team." },
+              { icon: Bot, title: "Your AI knows your business cold", desc: "Trained on your services, prices and FAQs — answers questions better than a junior staff member." },
+              { icon: Clock, title: "Open at 2am. Closed never.", desc: "Bank holidays, weekends, after hours — every call gets answered, every lead captured." },
+              { icon: Users, title: "Turn callers into customers automatically", desc: "Collects name, number and intent — straight into your inbox or CRM." },
+              { icon: BarChart3, title: "See exactly what callers want", desc: "Every call transcribed and summarised — spot trends, fix gaps, improve your service." },
+              { icon: Shield, title: "Your calls stay private", desc: "End-to-end encrypted and GDPR compliant. Customer data never leaves our secure infrastructure." },
+              { icon: Headphones, title: "Complex calls go to the right human", desc: "When a caller needs a real person, Voigro transfers them instantly — with full context." },
             ].map((f, i) => (
               <div key={i} className="group rounded-xl border bg-background p-6 transition-all duration-150 hover:shadow-md">
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
