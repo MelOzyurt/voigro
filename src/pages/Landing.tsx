@@ -82,6 +82,17 @@ export default function Landing() {
               <Link to="/signup">Start Free Trial <ArrowRight className="ml-1 h-5 w-5" /></Link>
             </Button>
           </motion.div>
+          <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              <Zap className="h-3 w-3 text-primary" /> Live in under 5 minutes
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3 text-primary" /> Answers calls 24/7
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              <Users className="h-3 w-3 text-primary" /> Avg. 40+ recovered calls/month
+            </span>
+          </motion.div>
         </div>
 
         {/* Mock call UI */}
