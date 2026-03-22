@@ -23,6 +23,10 @@ import FAQs from "./pages/dashboard/FAQs";
 import Billing from "./pages/dashboard/Billing";
 import Support from "./pages/dashboard/Support";
 import SettingsPage from "./pages/dashboard/Settings";
+import Bookings from "./pages/dashboard/Bookings";
+import CalendarPage from "./pages/dashboard/Calendar";
+import Customers from "./pages/dashboard/Customers";
+import AvailabilityPage from "./pages/dashboard/Availability";
 import NotFound from "./pages/NotFound";
 
 // Admin
