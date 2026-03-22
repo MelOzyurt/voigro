@@ -206,10 +206,8 @@ export default function Landing() {
       <footer className="border-t py-12">
         <div className="container flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-              <Phone className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-lg font-bold text-foreground">Callio</span>
+            <img src={voigroLogo} alt="Voigro" className="h-7 w-7" />
+            <span className="font-display text-lg font-bold text-foreground">Voigro</span>
           </div>
           <p className="text-sm text-muted-foreground">© 2026 Callio. All rights reserved.</p>
         </div>
