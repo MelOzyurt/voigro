@@ -98,6 +98,7 @@ export default function AgentConfig() {
   const [tone, setTone] = useState("friendly");
   const [responseStyle, setResponseStyle] = useState("concise");
   const [language, setLanguage] = useState("en");
+  const [voiceDeliveryInstructions, setVoiceDeliveryInstructions] = useState("Speak in a warm, friendly, and welcoming tone, like a polite restaurant staff member answering the phone. Smile slightly while speaking, with a natural rhythm and short pauses. Keep the delivery relaxed and conversational, not robotic. Emphasize the business name clearly. Slight pause after greeting.");
   const [fallbackMessage, setFallbackMessage] = useState("");
   const [maxClarification, setMaxClarification] = useState("3");
   const [offerCallback, setOfferCallback] = useState(true);
