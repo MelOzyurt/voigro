@@ -119,7 +119,7 @@ async function getAIResponse(
       headers["anthropic-version"] = "2023-06-01";
       body = {
         model: llm.model || "claude-sonnet-4-20250514",
-        max_tokens: 300,
+        max_tokens: 150,
         system: systemPrompt,
         messages: messages.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
       };
