@@ -334,6 +334,19 @@ function buildSystemPrompt(
     ).join("\n\n"));
   }
 
+  // Voice delivery instructions
+  const voiceDelivery = agent.voice_delivery_instructions as string | undefined;
+  if (voiceDelivery) {
+    parts.push(`Voice delivery style: ${voiceDelivery}`);
+  } else {
+    parts.push(
+      "Voice delivery style: Speak in a warm, friendly, and welcoming tone, like a polite restaurant staff member answering the phone.",
+      "Smile slightly while speaking, with a natural rhythm and short pauses.",
+      "Keep the delivery relaxed and conversational, not robotic.",
+      "Emphasize the business name clearly. Slight pause after greeting."
+    );
+  }
+
   parts.push(
     "Respond conversationally and concisely (max 2-3 sentences).",
     "If you cannot help the caller, let them know you will transfer them to a team member.",
