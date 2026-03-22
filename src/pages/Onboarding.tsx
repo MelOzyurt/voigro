@@ -5,13 +5,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Phone, ArrowRight, ArrowLeft, CheckCircle, Copy, Loader2 } from "lucide-react";
 import { usePhoneSetup } from "@/hooks/use-phone-setup";
 import { useOrgId } from "@/hooks/use-organization";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import ModuleSelection from "@/components/onboarding/ModuleSelection";
+import type { ModuleKey } from "@/hooks/use-modules";
 
 const industries = ["Restaurant", "Auto Shop / Garage", "Medical Clinic", "Salon / Spa", "Retail Store", "Professional Services", "Real Estate", "Other"];
 const agentActions = [
@@ -23,13 +25,31 @@ const agentActions = [
   { id: "message", label: "Message Taking", desc: "Take messages when you're unavailable" },
 ];
 
-const stepTitles = ["Business Profile", "Services & Hours", "Agent Setup", "Phone & Actions", "Phone Line", "Choose Plan", "Review"];
+/* ─── Step definitions ─── */
+type StepId = "business" | "modules" | "services" | "agent" | "phone_actions" | "phone_line" | "plan" | "review";
+
+interface StepDef {
+  id: StepId;
+  title: string;
+  requiresModule?: ModuleKey;
+}
+
+const ALL_STEPS: StepDef[] = [
+  { id: "business", title: "Business Profile" },
+  { id: "modules", title: "Choose Modules" },
+  { id: "services", title: "Services & Hours", requiresModule: "voice_agent" },
+  { id: "agent", title: "Agent Setup", requiresModule: "voice_agent" },
+  { id: "phone_actions", title: "Phone & Actions", requiresModule: "voice_agent" },
+  { id: "phone_line", title: "Phone Line", requiresModule: "voice_agent" },
+  { id: "plan", title: "Choose Plan" },
+  { id: "review", title: "Review" },
+];
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const orgId = useOrgId();
-  const [step, setStep] = useState(0);
+  const [stepIndex, setStepIndex] = useState(0);
   const [creatingOrg, setCreatingOrg] = useState(false);
   const [data, setData] = useState({
     businessName: "", industry: "", location: "", phone: "", website: "",
@@ -37,12 +57,22 @@ export default function Onboarding() {
     agentName: "", greeting: "", tone: "friendly",
     selectedActions: ["booking", "callback", "faq"] as string[],
     plan: "professional",
+    selectedModules: ["voice_agent"] as ModuleKey[],
   });
 
   const { phoneSetup, provisionNumber, isProvisioning, updateSetup } = usePhoneSetup();
   const [provisionTriggered, setProvisionTriggered] = useState(false);
 
+  /* ─── Dynamic steps based on selected modules ─── */
+  const activeSteps = useMemo(() => {
+    return ALL_STEPS.filter((s) => !s.requiresModule || data.selectedModules.includes(s.requiresModule));
+  }, [data.selectedModules]);
+
+  const currentStep = activeSteps[stepIndex];
+  const totalSteps = activeSteps.length;
+
   const update = (key: string, value: unknown) => setData(prev => ({ ...prev, [key]: value }));
+
   const toggleAction = (id: string) => {
     const actions = data.selectedActions.includes(id)
       ? data.selectedActions.filter(a => a !== id)
@@ -50,12 +80,18 @@ export default function Onboarding() {
     update("selectedActions", actions);
   };
 
-  // Create organization before phone provisioning step if not exists
+  const toggleModule = (key: ModuleKey) => {
+    const modules = data.selectedModules.includes(key)
+      ? data.selectedModules.filter(m => m !== key)
+      : [...data.selectedModules, key];
+    update("selectedModules", modules);
+  };
+
+  /* ─── Create organization ─── */
   const ensureOrganization = async () => {
     if (orgId) return true;
     setCreatingOrg(true);
     try {
-      // Create organization
       const { data: org, error: orgError } = await supabase
         .from("organizations")
         .insert({
@@ -80,8 +116,18 @@ export default function Onboarding() {
         if (profileError) throw profileError;
       }
 
-      // Invalidate queries so orgId refreshes
+      // Update module selections — the trigger seeds defaults, we update to match user choices
+      const allModuleKeys: ModuleKey[] = ["voice_agent", "booking", "calendar", "public_booking_page", "crm", "marketing"];
+      for (const key of allModuleKeys) {
+        await supabase
+          .from("organization_modules")
+          .update({ enabled: data.selectedModules.includes(key) })
+          .eq("organization_id", org.id)
+          .eq("module_key", key);
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      await queryClient.invalidateQueries({ queryKey: ["organization-modules"] });
       return true;
     } catch (err) {
       console.error("Failed to create organization:", err);
@@ -92,13 +138,13 @@ export default function Onboarding() {
     }
   };
 
-  // Auto-trigger provisioning when reaching the phone line step (only when orgId is available)
+  // Auto-trigger provisioning on phone_line step
   useEffect(() => {
-    if (step === 4 && orgId && !phoneSetup?.virtual_number && !provisionTriggered && !isProvisioning) {
+    if (currentStep?.id === "phone_line" && orgId && !phoneSetup?.virtual_number && !provisionTriggered && !isProvisioning) {
       setProvisionTriggered(true);
       provisionNumber();
     }
-  }, [step, orgId, phoneSetup?.virtual_number, provisionTriggered, isProvisioning, provisionNumber]);
+  }, [currentStep?.id, orgId, phoneSetup?.virtual_number, provisionTriggered, isProvisioning, provisionNumber]);
 
   const handleCopyNumber = () => {
     if (phoneSetup?.virtual_number) {
@@ -114,18 +160,34 @@ export default function Onboarding() {
   };
 
   const next = async () => {
-    // Create org before phone provisioning step
-    if (step === 3) {
+    // Create org before phone_line step (or before plan if voice_agent is disabled)
+    const nextStep = activeSteps[stepIndex + 1];
+    if (currentStep?.id === "phone_actions" || (currentStep?.id === "modules" && !data.selectedModules.includes("voice_agent") && nextStep?.id === "plan")) {
       const ok = await ensureOrganization();
       if (!ok) return;
-      // Wait for query invalidation to propagate before moving to step 4
       await new Promise(resolve => setTimeout(resolve, 500));
     }
-    step < stepTitles.length - 1 ? setStep(step + 1) : navigate("/dashboard");
-  };
-  const back = () => step > 0 && setStep(step - 1);
+    // Also ensure org before plan step if it hasn't been created yet
+    if (nextStep?.id === "plan" && !orgId) {
+      const ok = await ensureOrganization();
+      if (!ok) return;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
 
-  const canProceedPhoneLine = phoneSetup?.virtual_number && phoneSetup?.forwarding_confirmed;
+    if (stepIndex < totalSteps - 1) {
+      setStepIndex(stepIndex + 1);
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
+  const back = () => stepIndex > 0 && setStepIndex(stepIndex - 1);
+
+  const canProceed = () => {
+    if (currentStep?.id === "phone_line" && !phoneSetup?.virtual_number) return false;
+    if (creatingOrg) return false;
+    return true;
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -138,16 +200,17 @@ export default function Onboarding() {
             <span className="font-display text-xl font-bold text-foreground">Callio</span>
           </div>
           <h1 className="mt-6 font-display text-2xl font-bold text-foreground">Set up your AI agent</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Step {step + 1} of {stepTitles.length} — {stepTitles[step]}</p>
+          <p className="mt-1 text-sm text-muted-foreground">Step {stepIndex + 1} of {totalSteps} — {currentStep?.title}</p>
           <div className="mt-6 flex items-center justify-center gap-1">
-            {stepTitles.map((_, i) => (
-              <div key={i} className={`h-1.5 flex-1 max-w-8 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-border"}`} />
+            {activeSteps.map((_, i) => (
+              <div key={i} className={`h-1.5 flex-1 max-w-8 rounded-full transition-colors ${i <= stepIndex ? "bg-primary" : "bg-border"}`} />
             ))}
           </div>
         </div>
 
         <div className="rounded-xl border bg-card p-6">
-          {step === 0 && (
+          {/* ─── Business Profile ─── */}
+          {currentStep?.id === "business" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Tell us about your business so your AI agent can represent you accurately.</p>
               <div>
@@ -172,7 +235,13 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 1 && (
+          {/* ─── Module Selection (NEW) ─── */}
+          {currentStep?.id === "modules" && (
+            <ModuleSelection selected={data.selectedModules} onToggle={toggleModule} />
+          )}
+
+          {/* ─── Services & Hours ─── */}
+          {currentStep?.id === "services" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Add your services, products, and hours so the AI can answer customer questions.</p>
               <div>
@@ -191,7 +260,8 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 2 && (
+          {/* ─── Agent Setup ─── */}
+          {currentStep?.id === "agent" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Customize how your AI agent sounds and introduces itself.</p>
               <div>
@@ -218,7 +288,8 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 3 && (
+          {/* ─── Phone & Actions ─── */}
+          {currentStep?.id === "phone_actions" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Choose what your AI agent can do and enter your business phone number.</p>
               <div>
@@ -243,7 +314,8 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 4 && (
+          {/* ─── Phone Line ─── */}
+          {currentStep?.id === "phone_line" && (
             <div className="space-y-5">
               <p className="text-sm text-muted-foreground">
                 We're assigning a virtual phone number for your AI agent. You'll forward your business number to it.
@@ -287,11 +359,7 @@ export default function Onboarding() {
                     ))}
                   </div>
 
-                  <Button
-                    className="w-full"
-                    onClick={handleConfirmForwarding}
-                    disabled={phoneSetup.forwarding_confirmed}
-                  >
+                  <Button className="w-full" onClick={handleConfirmForwarding} disabled={phoneSetup.forwarding_confirmed}>
                     {phoneSetup.forwarding_confirmed ? (
                       <><CheckCircle className="mr-2 h-4 w-4" /> Forwarding Confirmed</>
                     ) : (
@@ -310,7 +378,8 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 5 && (
+          {/* ─── Choose Plan ─── */}
+          {currentStep?.id === "plan" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Choose the plan that fits your business. You can change anytime.</p>
               {[
@@ -335,7 +404,8 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 6 && (
+          {/* ─── Review ─── */}
+          {currentStep?.id === "review" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Review your setup before launching. You can adjust everything from the dashboard later.</p>
               <div className="space-y-2">
@@ -343,11 +413,16 @@ export default function Onboarding() {
                   { label: "Business", value: data.businessName || "Not set" },
                   { label: "Industry", value: data.industry || "Not set" },
                   { label: "Location", value: data.location || "Not set" },
-                  { label: "Phone", value: data.phone || "Not set" },
-                  { label: "AI Phone Line", value: phoneSetup?.virtual_number || "Not assigned" },
-                  { label: "Agent Name", value: data.agentName || "Not set" },
-                  { label: "Tone", value: data.tone },
-                  { label: "Actions", value: data.selectedActions.length > 0 ? `${data.selectedActions.length} enabled` : "None" },
+                  { label: "Modules", value: data.selectedModules.length > 0 ? `${data.selectedModules.length} active` : "None" },
+                  ...(data.selectedModules.includes("voice_agent")
+                    ? [
+                        { label: "Phone", value: data.phone || "Not set" },
+                        { label: "AI Phone Line", value: phoneSetup?.virtual_number || "Not assigned" },
+                        { label: "Agent Name", value: data.agentName || "Not set" },
+                        { label: "Tone", value: data.tone },
+                        { label: "Actions", value: data.selectedActions.length > 0 ? `${data.selectedActions.length} enabled` : "None" },
+                      ]
+                    : []),
                   { label: "Plan", value: data.plan.charAt(0).toUpperCase() + data.plan.slice(1) },
                 ].map((item, i) => (
                   <div key={i} className="flex justify-between rounded-lg bg-secondary/50 px-3 py-2">
@@ -359,23 +434,21 @@ export default function Onboarding() {
               <div className="rounded-lg border bg-primary/5 border-primary/20 p-3">
                 <p className="text-xs text-foreground font-medium">After launching, you'll need to:</p>
                 <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                  <li>• Verify call forwarding is working correctly</li>
+                  {data.selectedModules.includes("voice_agent") && <li>• Verify call forwarding is working correctly</li>}
                   <li>• Add detailed services, products, and FAQs</li>
-                  <li>• Make a test call to verify everything works</li>
+                  {data.selectedModules.includes("voice_agent") && <li>• Make a test call to verify everything works</li>}
+                  {data.selectedModules.includes("booking") && <li>• Set up availability rules and booking preferences</li>}
                 </ul>
               </div>
             </div>
           )}
 
           <div className="mt-6 flex justify-between">
-            <Button variant="ghost" onClick={back} disabled={step === 0}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
-            <Button
-              onClick={next}
-              disabled={(step === 4 && !phoneSetup?.virtual_number) || creatingOrg}
-            >
+            <Button variant="ghost" onClick={back} disabled={stepIndex === 0}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
+            <Button onClick={next} disabled={!canProceed()}>
               {creatingOrg ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</>
-              ) : step === stepTitles.length - 1 ? (
+              ) : stepIndex === totalSteps - 1 ? (
                 "Launch Dashboard"
               ) : (
                 "Continue"
