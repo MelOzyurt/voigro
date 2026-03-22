@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import {
   Phone, Bot, BarChart3, Clock, Users, ArrowRight,
-  CheckCircle, Zap, Shield, Headphones, Star,
+  Zap, Shield, Headphones,
   Utensils, Wrench, Stethoscope, Scissors, ShoppingBag, Building2
 } from "lucide-react";
 import { motion } from "framer-motion";
+import ProductTiers from "@/components/landing/ProductTiers";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -186,41 +187,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-24">
-        <div className="container">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="font-display text-3xl font-bold text-foreground">Simple, Transparent Pricing</h2>
-            <p className="mt-3 text-muted-foreground">Start free. Upgrade as you grow. No hidden fees.</p>
-          </div>
-          <div className="mx-auto mt-16 grid max-w-5xl gap-6 md:grid-cols-3">
-            {plans.map((plan, i) => (
-              <div key={i} className={`relative rounded-2xl border p-8 ${plan.popular ? "border-primary bg-card shadow-lg ring-1 ring-primary" : "bg-card"}`}>
-                {plan.popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
-                    Most Popular
-                  </span>
-                )}
-                <h3 className="font-display text-lg font-bold text-foreground">{plan.name}</h3>
-                <div className="mt-4 flex items-baseline">
-                  <span className="font-display text-4xl font-extrabold text-foreground">{plan.price}</span>
-                  <span className="ml-1 text-muted-foreground">{plan.period}</span>
-                </div>
-                <ul className="mt-6 space-y-3">
-                  {plan.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CheckCircle className="h-4 w-4 text-success" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button className="mt-8 w-full" variant={plan.popular ? "default" : "outline"} asChild>
-                  <Link to="/signup">{plan.price === "Custom" ? "Contact Sales" : "Get Started"}</Link>
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Product Tiers */}
+      <ProductTiers />
 
       {/* CTA */}
       <section className="border-t bg-navy py-24">
