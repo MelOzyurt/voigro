@@ -33,7 +33,7 @@ export default function Onboarding() {
     industry: "",
     location: "",
     website: "",
-    selectedModules: ["voice_agent"] as ModuleKey[],
+    selectedModules: [] as ModuleKey[],
   });
 
   const currentStep = STEPS[stepIndex];
