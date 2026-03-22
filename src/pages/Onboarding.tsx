@@ -97,10 +97,8 @@ export default function Onboarding() {
       <div className="w-full max-w-lg">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Phone className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">Callio</span>
+            <img src={voigroLogo} alt="Voigro" className="h-8 w-8" />
+            <span className="font-display text-xl font-bold text-foreground">Voigro</span>
           </div>
           <h1 className="mt-6 font-display text-2xl font-bold text-foreground">
             {currentStep.id === "launch" ? "You're all set!" : "Set up your business"}
