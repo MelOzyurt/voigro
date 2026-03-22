@@ -69,7 +69,7 @@ export default function Landing() {
       <motion.section initial="hidden" animate="visible" variants={stagger} className="container py-24 lg:py-32">
         <div className="mx-auto max-w-3xl text-center">
           <motion.div variants={fadeUp} className="mb-4 inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm text-muted-foreground">
-            <Zap className="h-3.5 w-3.5 text-primary" /> AI-Powered Phone Agents for Business
+            <Zap className="h-3.5 w-3.5 text-primary" /> AI-Powered Voice Agents for Business
           </motion.div>
           <motion.h1 variants={fadeUp} className="font-display text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Never Miss a Call.<br />Never Lose a Customer.
