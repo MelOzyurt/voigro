@@ -186,6 +186,42 @@ function buildSystemPrompt(
     parts.push(`Special instructions: ${agent.special_instructions}`);
   }
 
+  // --- Call Objectives ---
+  const enabledActions = agent.enabled_actions as Record<string, unknown> | undefined;
+  if (enabledActions) {
+    const objectives = enabledActions.objectives as string[] | undefined;
+    if (objectives && objectives.length > 0) {
+      const objectiveDescriptions: Record<string, string> = {
+        book_appointment: "Help the caller book an appointment. Ask for their name, preferred date/time, and service needed. Confirm the booking details back to them.",
+        generate_lead: "Collect the caller's contact information (name, phone number). Ask qualifying questions to understand their needs.",
+        take_order: "Take the caller's order. Ask what items they want, quantities, and any customizations. Read back the full order summary before confirming. Collect delivery address and contact details.",
+        answer_questions: "Answer the caller's questions using the knowledge base. Provide accurate information about products, services, and FAQs.",
+        transfer_to_human: "If the caller requests to speak with a human or the conversation reaches a point where human assistance is needed, let them know you will transfer them.",
+      };
+      const activeObjectives = objectives
+        .map(o => objectiveDescriptions[o])
+        .filter(Boolean);
+      if (activeObjectives.length > 0) {
+        parts.push("Your primary objectives for this call (in priority order):\n" + activeObjectives.map((d, i) => `${i + 1}. ${d}`).join("\n"));
+      }
+    }
+
+    // Escalation rules
+    const escalation = enabledActions.escalation_rules as Record<string, unknown> | undefined;
+    if (!escalation) {
+      const agentEscalation = agent.escalation_rules as Record<string, unknown> | undefined;
+      if (agentEscalation) {
+        const rules: string[] = [];
+        if (agentEscalation.explicit_request) rules.push("caller explicitly asks for a human");
+        if (agentEscalation.negative_sentiment) rules.push("caller becomes upset or frustrated");
+        if (agentEscalation.repeated_failure) rules.push("you cannot resolve the issue after multiple attempts");
+        if (rules.length > 0) {
+          parts.push(`Transfer to a human agent when: ${rules.join(", ")}.`);
+        }
+      }
+    }
+  }
+
   const childrenMap = new Map<string, Array<Record<string, unknown>>>();
   for (const item of knowledgeItems) {
     const pid = item.parent_id as string | null;
