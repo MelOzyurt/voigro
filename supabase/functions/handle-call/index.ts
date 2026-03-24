@@ -201,7 +201,10 @@ function buildSystemPrompt(
 
   const formatItemWithChildren = (item: Record<string, unknown>): string => {
     const meta = item.metadata as Record<string, unknown> | undefined;
-    let line = `- ${item.name}${item.description ? ': ' + item.description : ''}`;
+    // Truncate long descriptions to keep prompt concise
+    const desc = item.description ? String(item.description) : '';
+    const shortDesc = desc.length > 80 ? desc.slice(0, 80).trimEnd() + '…' : desc;
+    let line = `- ${item.name}${shortDesc ? ': ' + shortDesc : ''}`;
     if (meta?.price) line += ` (Price: ${meta.price})`;
     if (meta?.duration) line += ` (Duration: ${meta.duration})`;
     const children = childrenMap.get(item.id as string);
@@ -386,7 +389,10 @@ Deno.serve(async (req) => {
         // System prompt'u oluştur (Voigro DB'den)
         const systemPrompt = buildSystemPrompt(agent, org, knowledgeItems);
 
-        console.log(`[call.answered] Starting Telnyx AI Assistant with dynamic variables`);
+        // Strip surrounding quotes from greeting if present (DB may store them)
+        const cleanGreeting = greeting.replace(/^["']+|["']+$/g, '').trim();
+
+        console.log(`[call.answered] Starting Telnyx AI Assistant | prompt length: ${systemPrompt.length} | greeting: ${cleanGreeting.slice(0, 60)}`);
 
         // Ensure assistant has correct placeholder config (runs once per cold start)
         await ensureAssistantConfigured(apiKey);
@@ -398,7 +404,7 @@ Deno.serve(async (req) => {
           },
           dynamic_variables: {
             system_prompt: systemPrompt,
-            greeting: greeting,
+            greeting: cleanGreeting,
           },
         });
 
