@@ -24,18 +24,8 @@ async function ensureAssistantConfigured(apiKey: string): Promise<void> {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o",
           greeting: "{{greeting}}",
           instructions: "{{system_prompt}}",
-          transcription: {
-            model: "deepgram/nova-3",
-            language: "en",
-            settings: {
-              eot_timeout_ms: 1000,
-              eot_threshold: 0.5,
-              eager_eot_threshold: 0.3,
-            },
-          },
         }),
       }
     );
