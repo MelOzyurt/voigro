@@ -9,6 +9,38 @@ const corsHeaders = {
 // Telnyx Portal'dan alınan Voigro AI Assistant ID
 const TELNYX_ASSISTANT_ID = "assistant-0768ff84-c9fd-4aab-98b0-15af86d17eae";
 
+// Cold-start flag — assistant placeholder config only needs to be set once
+let assistantConfigured = false;
+
+async function ensureAssistantConfigured(apiKey: string): Promise<void> {
+  if (assistantConfigured) return;
+  try {
+    const res = await fetch(
+      `https://api.telnyx.com/v2/ai/assistants/${TELNYX_ASSISTANT_ID}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          greeting: "{{greeting}}",
+          instructions: "{{system_prompt}}",
+        }),
+      }
+    );
+    if (res.ok) {
+      assistantConfigured = true;
+      console.log("[ensureAssistantConfigured] Assistant config updated OK");
+    } else {
+      const text = await res.text();
+      console.error("[ensureAssistantConfigured] FAILED:", res.status, text);
+    }
+  } catch (e) {
+    console.error("[ensureAssistantConfigured] Error:", e);
+  }
+}
+
 interface WebhookEvent {
   data: {
     event_type: string;
