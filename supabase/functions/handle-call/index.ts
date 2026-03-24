@@ -388,6 +388,9 @@ Deno.serve(async (req) => {
 
         console.log(`[call.answered] Starting Telnyx AI Assistant with dynamic variables`);
 
+        // Ensure assistant has correct placeholder config (runs once per cold start)
+        await ensureAssistantConfigured(apiKey);
+
         // Telnyx AI Assistant'ı başlat — tek çağrı, her şeyi halleder
         await providerAction(call_control_id, "ai_assistant_start", apiKey, {
           assistant: {
