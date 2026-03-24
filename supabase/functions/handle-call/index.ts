@@ -255,13 +255,16 @@ function buildSystemPrompt(
   };
 
   if (services.length > 0) {
-    parts.push("Our services:\n" + services.map(formatItemWithChildren).join("\n"));
+    parts.push("Our services:\n" + services.slice(0, 10).map(formatItemWithChildren).join("\n"));
   }
   if (products.length > 0) {
-    parts.push("Our products:\n" + products.map(formatItemWithChildren).join("\n"));
+    parts.push("Our products:\n" + products.slice(0, 25).map(formatItemWithChildren).join("\n"));
+    if (products.length > 25) {
+      parts.push("There are additional menu items not listed here. If the caller asks for another item, ask a short clarifying question instead of saying it is unavailable.");
+    }
   }
   if (faqs.length > 0) {
-    parts.push("Frequently asked questions:\n" + faqs.map(f =>
+    parts.push("Frequently asked questions:\n" + faqs.slice(0, 8).map(f =>
       `Q: ${f.name}\nA: ${f.description || 'No answer provided.'}`
     ).join("\n\n"));
   }
@@ -429,9 +432,6 @@ Deno.serve(async (req) => {
         const cleanGreeting = greeting.replace(/^["']+|["']+$/g, '').trim();
 
         console.log(`[call.answered] Starting Telnyx AI Assistant | prompt length: ${systemPrompt.length} | greeting: ${cleanGreeting.slice(0, 60)}`);
-
-        // Ensure assistant has correct placeholder config (runs once per cold start)
-        await ensureAssistantConfigured(apiKey);
 
         // Telnyx AI Assistant'ı başlat — tek çağrı, her şeyi halleder
         await providerAction(call_control_id, "ai_assistant_start", apiKey, {
